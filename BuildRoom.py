@@ -3,8 +3,8 @@ import numpy as np
 #Local imports
 import BuildRoomSource as source
 
-templates_full = np.load("templates.npy")
-corner_templates = np.load("corner_templates.npy")
+templates_full = np.load("templates/templates.npy")
+corner_templates = np.load("templates/corner_templates.npy")
 
 templates = [corner_templates, templates_full]
 
