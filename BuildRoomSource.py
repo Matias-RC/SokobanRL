@@ -87,8 +87,9 @@ def PartitionGrid3x3(grid, templates):
     n = (grid.shape[0]-grid.shape[1]%3)/3
     m  = (grid.shape[1]-grid.shape[0]%3)/3
     if n and m == 1:
-        pass
+        return None
 
     for i in range(m):
         for j in range(n):
             grid = fitTemplate(BoxIndex=[i,j], BoxesInGrid=[m,n], grid=grid, templates=templates)
+    return grid

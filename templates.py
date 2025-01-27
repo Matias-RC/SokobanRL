@@ -101,3 +101,17 @@ template17 = np.matrix([[-1,-1,-1,-1,-1],
                        [0,0,1,0,0],
                        [-1,0,0,0,-1],
                        [-1,0,0,-1,-1]])
+
+templates = [template1, template2, template3, template4, template5, template6, template7, template8, template9, template10, template11, template12, template13, template14, template15, template16, template17]
+first = []
+rest = []
+
+for i in templates:
+    for _ in range(4):
+        t  = np.rot90(i)
+        if np.all(t[:, 0] == -1) and np.all(t[0, :] == -1):
+            first.append(t)
+        rest.append(t)
+
+np.save("corner_templates", first)
+np.save("templates", rest)
