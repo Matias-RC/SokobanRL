@@ -77,8 +77,6 @@ def fitTemplate(BoxIndex, BoxesInGrid , grid, templates):
         while not templateFits(template, grid, BoxIndex, BoxesInGrid):
             template = random.choice(templates[1])
         grid = PlaceTemplate(template, grid, BoxIndex, BoxesInGrid)
-    #elif i == m-1 and j == n-1:
-    #    random.choice(templates[-2])
     
     return grid
 
