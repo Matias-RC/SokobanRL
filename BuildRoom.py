@@ -1,13 +1,18 @@
-#.venv imports
 import numpy as np
-#Local imports
+import pickle
+
+from regex import B
 import BuildRoomSource as source
 
-templates_full = np.load("templates/templates.npy")
-corner_templates = np.load("templates/corner_templates.npy")
+# Load templates and validate
+with open("templates/templates.pkl", "rb") as f:
+    templates = pickle.load(f)
 
-templates = [corner_templates, templates_full]
+def BuildRoom(level_width, level_height):
+    level = source.construct_grid(level_width, level_height, templates)
+    if not source.is_connected(level):
+        return BuildRoom(level_width, level_height)
+    return level
 
-def buildRoom(width,height):
-    gridMatrix  = source.CreateEmpty(width, height)
-    grid = source.PartitionGrid3x3(gridMatrix, templates)
+# Print the generated level
+print(BuildRoom(9, 9))
