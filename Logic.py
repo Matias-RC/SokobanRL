@@ -47,7 +47,7 @@ def update_environment(grid, action):
 
     # Handle different interactions
     if target_cell == 0:  # Empty space
-        grid[new_row, new_col] = 2 if grid[row, col] == 2 else 6
+        grid[new_row, new_col] = 2
         grid[row, col] = 4 if grid[row, col] == 6 else 0
     elif target_cell == 3:  # Box
         # Check the cell beyond the box
@@ -55,10 +55,10 @@ def update_environment(grid, action):
         if (0 <= box_new_row < grid.shape[0] and 0 <= box_new_col < grid.shape[1] and
                 grid[box_new_row, box_new_col] in [0, 4]):  # Box can move
             grid[box_new_row, box_new_col] = 5 if grid[box_new_row, box_new_col] == 4 else 3
-            grid[new_row, new_col] = 2 if grid[row, col] == 2 else 6
+            grid[new_row, new_col] = 2 
             grid[row, col] = 4 if grid[row, col] == 6 else 0
     elif target_cell == 4:  # Button or box on button
-        grid[new_row, new_col] = 6 if target_cell == 4 else 5
+        grid[new_row, new_col] = 6
         grid[row, col] = 4 if grid[row, col] == 6 else 0
     elif target_cell == 5:
         # Check the cell beyond the box
@@ -77,7 +77,7 @@ def update_environment(grid, action):
 grid = np.array([
     [1, 1, 1, 1, 1],
     [1, 0, 3, 4, 1],
-    [1, 2, 5, 0, 1],
+    [1, 6, 3, 0, 1],
     [1, 0, 0, 0, 1],
     [1, 1, 1, 1, 1]
 ])
