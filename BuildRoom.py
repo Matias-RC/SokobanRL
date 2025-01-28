@@ -8,11 +8,7 @@ import BuildRoomSource as source
 with open("templates/templates.pkl", "rb") as f:
     templates = pickle.load(f)
 
-def BuildRoom(level_width, level_height):
-    level = source.construct_grid(level_width, level_height, templates)
-    if not source.is_connected(level):
-        return BuildRoom(level_width, level_height)
-    return level
+
 
 # Print the generated level
-print(BuildRoom(9, 9))
+print(source.BuildRoom(20, 13, templates))

@@ -2,7 +2,6 @@ import numpy as np
 import random
 
 def rotate_matrix(matrix, times):
-    """Rotate a matrix 90 degrees clockwise a given number of times."""
     return np.rot90(matrix, -times)
 
 def rotate_variations(variations, times):
@@ -12,30 +11,36 @@ def rotate_variations(variations, times):
     return variations
 
 def place_template(grid, template, position):
-    """Place a template's core and variations on the grid."""
+
     core, variations = template
     cy, cx = position
-    
+
     # Place the 3x3 core matrix
     for y in range(core.shape[0]):
         for x in range(core.shape[1]):
-            grid[cy + y, cx + x] = core[y, x]
+            if core[y, x] != -1:  # Avoid overwriting walls
+                grid[cy + y, cx + x] = core[y, x]
 
     # Place variations, respecting grid bounds
     for vy, vx in variations:
         ny, nx = cy + vy + 1, cx + vx + 1  # Adjust relative positions to absolute
         if 0 <= ny < grid.shape[0] and 0 <= nx < grid.shape[1]:
-            grid[ny, nx] = 0  # Floors indicated by 0
+            if grid[ny, nx] == 1:  # Avoid overwriting existing floors or walls
+                grid[ny, nx] = 0  # Floors indicated by 0
 
 def construct_grid(level_width, level_height, templates):
-    """Construct a grid with given dimensions and templates."""
-    # Ensure dimensions are divisible by 3
-    if level_width % 3 != 0 or level_height % 3 != 0:
-        raise ValueError("Both level_width and level_height must be divisible by 3.")
-
+    """
+    Construct a grid with given dimensions and templates.
+    First Step In the overall Generation of a Sokoban Level
+    """
     grid = np.ones((level_height, level_width), dtype=int)  # Initialize grid with walls
-    grid_height_sections = level_height // 3
-    grid_width_sections = level_width // 3
+
+    # Template dimensions
+    template_size = 3
+
+    # Calculate the number of sections based on template size
+    grid_height_sections = (level_height + template_size - 1) // template_size
+    grid_width_sections = (level_width + template_size - 1) // template_size
 
     for gy in range(grid_height_sections):
         for gx in range(grid_width_sections):
@@ -45,9 +50,26 @@ def construct_grid(level_width, level_height, templates):
             core = rotate_matrix(template[0], rotation)
             variations = rotate_variations(template[1], rotation)
 
-            # Determine position to place the 3x3 core matrix
-            cy, cx = gy * 3, gx * 3
+            # Determine position to place the 3x3 core matrix, adjusted for boundaries
+            cy = min(gy * template_size, level_height - template_size)
+            cx = min(gx * template_size, level_width - template_size)
             place_template(grid, [core, variations], (cy, cx))
+
+    return grid
+
+def optimize_grid(grid):
+    """Optimize the grid by removing redundant spaces and ensuring accessibility."""
+    # Remove isolated floor tiles (surrounded by three or more walls)
+    height, width = grid.shape
+    for y in range(1, height - 1):
+        for x in range(1, width - 1):
+            if grid[y, x] == 0:  # Floor tile
+                wall_count = sum(
+                    grid[y + dy, x + dx] == 1
+                    for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]
+                )
+                if wall_count >= 3:
+                    grid[y, x] = 1  # Convert to wall
 
     return grid
 
@@ -72,3 +94,11 @@ def is_connected(grid):
     # Check if all floor tiles are visited
     floor_tiles = (grid == 0)
     return np.all(visited[floor_tiles])
+
+def BuildRoom(level_width, level_height, templates):
+    while True:
+        grid = construct_grid(level_width, level_height, templates)
+        grid = optimize_grid(grid)
+        if is_connected(grid):
+            break
+    return grid
