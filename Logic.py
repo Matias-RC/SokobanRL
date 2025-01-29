@@ -74,6 +74,8 @@ def update_environment(grid, action):
 
     return grid, terminal_success
 
+"""Usage example"""
+
 grid = np.array([
     [1, 1, 1, 1, 1],
     [1, 0, 3, 4, 1],
