@@ -74,6 +74,10 @@ Inversed actor critic:
     - We determinate the reward to be the bigger if for longer shortest paths.
     - Since we only want some basic pattern recognition the AC will only take sorrounding grid area from the player.
         -> Therfore the size of the input is constant  (padding if needed)
+    
+        A(s, a) = r(s,a,s') + V(s') - V(s)
+        r(s, a, s') = Delta Box Lines
+        V(s) = Length of Shortest path to succesful terminal state
 """
 
 def ac(actor, critic, episodes, max_steps=10, lr_a=1e-3, lr_c=1e-3):
