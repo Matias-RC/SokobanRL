@@ -11,7 +11,7 @@ ACTION_MAP = {
 class master():
     def __init__(self):
         pass
-    def update_environment(grid, action):
+    def update_environment(self, grid, action):
         """
         Updates the Sokoban environment based on the action and modifies the grid in place.
 
@@ -76,11 +76,93 @@ class master():
         terminal_success = not (4 in grid or 6 in grid)
 
         return grid, terminal_success
+    """
+        Fast Logic --- code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
+    """
+    def PosOfPlayer(self, gameState):
+        return list(np.argwhere(gameState == 2)[0])
 
-    def inverse_update_environment(grid, action):
+    def PosOfBoxes(self, gameState):
+        return list(tuple(x) for x in np.argwhere((gameState == 3) | (gameState == 5)))
+
+    def PosOfWalls(self, gameState):
+        return list(tuple(x) for x in np.argwhere(gameState == 1))
+
+    def PosOfGoals(self, gameState):
+        return list(tuple(x) for x in np.argwhere((gameState == 4) | (gameState == 5)))
+
+    def isEndState(self, posBox, posGoals):
+        return sorted(posBox) == sorted(posGoals)
+    
+    def isLegalAction(self, action, posPlayer, posBox, posWalls):
+        """Check if the given action is legal"""
+        xPlayer, yPlayer = posPlayer
+        if action[-1].isupper(): # the move was a push
+            x1, y1 = xPlayer + 2 * action[0], yPlayer + 2 * action[1]
+        else:
+            x1, y1 = xPlayer + action[0], yPlayer + action[1]
+        return (x1, y1) not in posBox + posWalls
+
+    def legalActions(self, posPlayer, posBox):
+        """Return all legal actions for the agent in the current game state"""
+        allActions = [[-1,0,'u','U'],[1,0,'d','D'],[0,-1,'l','L'],[0,1,'r','R']]
+        xPlayer, yPlayer = posPlayer
+        legalActions = []
+        for action in allActions:
+            x1, y1 = xPlayer + action[0], yPlayer + action[1]
+            if (x1, y1) in posBox: # the move was a push
+                action.pop(2) # drop the little letter
+            else:
+                action.pop(3) # drop the upper letter
+            if self.isLegalAction(action, posPlayer, posBox):
+                legalActions.append(action)
+            else:
+                continue
+        return tuple(tuple(x) for x in legalActions)
+    def fastUpdate(self, posPlayer, posBox, action):
+        xPlayer, yPlayer = posPlayer # the previous position of player
+        newPosPlayer = [xPlayer + action[0], yPlayer + action[1]] # the current position of player
+        posBox = [list(x) for x in posBox]
+        if action[-1].isupper(): # if pushing, update the position of box
+            posBox.remove(newPosPlayer)
+            posBox.append([xPlayer + 2 * action[0], yPlayer + 2 * action[1]])
+        posBox = tuple(tuple(x) for x in posBox)
+        newPosPlayer = tuple(newPosPlayer)
+        return newPosPlayer, posBox
+    def isFailed(posBox, posGoals, posWalls):
+        """This function used to observe if the state is potentially failed, then prune the search"""
+        rotatePattern = [[0,1,2,3,4,5,6,7,8],
+                        [2,5,8,1,4,7,0,3,6],
+                        [0,1,2,3,4,5,6,7,8][::-1],
+                        [2,5,8,1,4,7,0,3,6][::-1]]
+        flipPattern = [[2,1,0,5,4,3,8,7,6],
+                        [0,3,6,1,4,7,2,5,8],
+                        [2,1,0,5,4,3,8,7,6][::-1],
+                        [0,3,6,1,4,7,2,5,8][::-1]]
+        allPattern = rotatePattern + flipPattern
+
+        for box in posBox:
+            if box not in posGoals:
+                board = [(box[0] - 1, box[1] - 1), (box[0] - 1, box[1]), (box[0] - 1, box[1] + 1),
+                        (box[0], box[1] - 1), (box[0], box[1]), (box[0], box[1] + 1),
+                        (box[0] + 1, box[1] - 1), (box[0] + 1, box[1]), (box[0] + 1, box[1] + 1)]
+                for pattern in allPattern:
+                    newBoard = [board[i] for i in pattern]
+                    if newBoard[1] in posWalls and newBoard[5] in posWalls: return True
+                    elif newBoard[1] in posBox and newBoard[2] in posWalls and newBoard[5] in posWalls: return True
+                    elif newBoard[1] in posBox and newBoard[2] in posWalls and newBoard[5] in posBox: return True
+                    elif newBoard[1] in posBox and newBoard[2] in posBox and newBoard[5] in posBox: return True
+                    elif newBoard[1] in posBox and newBoard[6] in posBox and newBoard[2] in posWalls and newBoard[3] in posWalls and newBoard[8] in posWalls: return True
+        return False
+    
+    """
+    InversedLogic
+    """
+
+    def inverse_update_environment(self, grid, action):
         """
         Reverses the Sokoban environment based on the action and modifies the grid in place.
-    
+
         Args:
             grid (np.ndarray): A matrix representing the current environment state.
                 Legend:
@@ -92,7 +174,7 @@ class master():
                     5: Box on Button
                     6: Player on Button
             action (int): Action to reverse (0='w', 1='s', 2='a', 3='d').
-    
+
         Returns:
             np.ndarray: Updated grid after the inverse action.
         """
@@ -101,17 +183,17 @@ class master():
         if len(player_pos) == 0:
             raise ValueError("Player not found in the grid.")
         player_pos = tuple(player_pos[0])  # Extract the first match (row, col)
-    
+
         # Calculate the source cell (where the player came from)
         row, col = player_pos
         d_row, d_col = ACTION_MAP[action]
         prev_row, prev_col = row - d_row, col - d_col  # Source cell
         front_row, front_col = row + d_row, col + d_col  # Cell in front of the player
-    
+
         # Check bounds for source and front cells
         if not (0 <= prev_row < grid.shape[0] and 0 <= prev_col < grid.shape[1]):
             return grid  # Invalid move (out of bounds)
-    
+
         if grid[prev_row, prev_col] == 3 or grid[prev_row, prev_col] == 5 or grid[prev_row, prev_col] == 1:
             # Invalid move: Player cannot reverse into a box nor a wall
             return grid
