@@ -80,16 +80,16 @@ class master():
         Fast Logic --- code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
     """
     def PosOfPlayer(self, gameState):
-        return list(np.argwhere(gameState == 2)[0])
+        return tuple(np.argwhere(gameState == 2)[0])
 
     def PosOfBoxes(self, gameState):
-        return list(tuple(x) for x in np.argwhere((gameState == 3) | (gameState == 5)))
+        return tuple(tuple(x) for x in np.argwhere((gameState == 3) | (gameState == 5)))
 
     def PosOfWalls(self, gameState):
-        return list(tuple(x) for x in np.argwhere(gameState == 1))
+        return tuple(tuple(x) for x in np.argwhere(gameState == 1))
 
     def PosOfGoals(self, gameState):
-        return list(tuple(x) for x in np.argwhere((gameState == 4) | (gameState == 5)))
+        return tuple(tuple(x) for x in np.argwhere((gameState == 4) | (gameState == 5)))
 
     def isEndState(self, posBox, posGoals):
         return sorted(posBox) == sorted(posGoals)
@@ -103,7 +103,7 @@ class master():
             x1, y1 = xPlayer + action[0], yPlayer + action[1]
         return (x1, y1) not in posBox + posWalls
 
-    def legalActions(self, posPlayer, posBox):
+    def legalActions(self, posPlayer, posBox, posWalls):
         """Return all legal actions for the agent in the current game state"""
         allActions = [[-1,0,'u','U'],[1,0,'d','D'],[0,-1,'l','L'],[0,1,'r','R']]
         xPlayer, yPlayer = posPlayer
@@ -114,7 +114,7 @@ class master():
                 action.pop(2) # drop the little letter
             else:
                 action.pop(3) # drop the upper letter
-            if self.isLegalAction(action, posPlayer, posBox):
+            if self.isLegalAction(action, posPlayer, posBox, posWalls):
                 legalActions.append(action)
             else:
                 continue
@@ -129,7 +129,7 @@ class master():
         posBox = tuple(tuple(x) for x in posBox)
         newPosPlayer = tuple(newPosPlayer)
         return newPosPlayer, posBox
-    def isFailed(posBox, posGoals, posWalls):
+    def isFailed(self, posBox, posGoals, posWalls):
         """This function used to observe if the state is potentially failed, then prune the search"""
         rotatePattern = [[0,1,2,3,4,5,6,7,8],
                         [2,5,8,1,4,7,0,3,6],

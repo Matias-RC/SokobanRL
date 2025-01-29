@@ -98,7 +98,7 @@ def breadth_first_search(grid):
 
         if node[-1] not in exploredSet:
             exploredSet.add(node[-1])
-            for action in Logic.legalActions(node[-1][0], node[-1][1]):
+            for action in Logic.legalActions(node[-1][0], node[-1][1], posWalls):
                 count += 1
                 newPosPlayer, newPosBox = Logic.fastUpdate(node[-1][0], node[-1][1], action)
                 
@@ -107,8 +107,17 @@ def breadth_first_search(grid):
                 
                 frontier.append(node + [(newPosPlayer, newPosBox)])
                 actions.append(node_action + [action[-1]])
-
-
+"""
+Example usage:
+Easygrid = np.asarray([
+    [1,1,1,1,1,1,1],
+    [1,0,0,3,4,0,1],
+    [1,2,0,3,0,4,1],
+    [1,1,1,1,1,1,1]
+])
+print(breadth_first_search(Easygrid))
+output:  77 \n urRldRR
+"""
 
 """
 Inversed actor critic:
