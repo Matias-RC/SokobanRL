@@ -68,9 +68,84 @@ class MLP(nn.Module):
     def forward(self, x):
         return self.network(x)
 
-Logic = master()
 
-def breadth_first_search(grid):
+class PriorityQueue:
+    """
+    Define a PriorityQueue data structure that will be used
+    code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
+    """
+    def  __init__(self):
+        self.Heap = []
+        self.Count = 0
+
+    def push(self, item, priority):
+        entry = (priority, self.Count, item)
+        PriorityQueue.heappush(self.Heap, entry)
+        self.Count += 1
+
+    def pop(self):
+        (_, _, item) = PriorityQueue.heappop(self.Heap)
+        return item
+
+    def isEmpty(self):
+        return len(self.Heap) == 0
+
+    # Code taken from heapq
+    @staticmethod
+    def heappush(heap, item):
+        """Push item onto heap, maintaining the heap invariant."""
+        heap.append(item)
+        PriorityQueue._siftdown(heap, 0, len(heap)-1)
+
+    @staticmethod
+    def heappop(heap):
+        """Pop the smallest item off the heap, maintaining the heap invariant."""
+        lastelt = heap.pop()    # raises appropriate IndexError if heap is empty
+        if heap:
+            returnitem = heap[0]
+            heap[0] = lastelt
+            PriorityQueue._siftup(heap, 0)
+            return returnitem
+        return lastelt
+
+    @staticmethod
+    def _siftup(heap, pos):
+        endpos = len(heap)
+        startpos = pos
+        newitem = heap[pos]
+        # Bubble up the smaller child until hitting a leaf.
+        childpos = 2*pos + 1    # leftmost child position
+        while childpos < endpos:
+            # Set childpos to index of smaller child.
+            rightpos = childpos + 1
+            if rightpos < endpos and not heap[childpos] < heap[rightpos]:
+                childpos = rightpos
+            # Move the smaller child up.
+            heap[pos] = heap[childpos]
+            pos = childpos
+            childpos = 2*pos + 1
+        # The leaf at pos is empty now.  Put newitem there, and bubble it up
+        # to its final resting place (by sifting its parents down).
+        heap[pos] = newitem
+        PriorityQueue._siftdown(heap, startpos, pos)
+
+    @staticmethod
+    def _siftdown(heap, startpos, pos):
+        newitem = heap[pos]
+        # Follow the path to the root, moving parents down until finding a place
+        # newitem fits.
+        while pos > startpos:
+            parentpos = (pos - 1) >> 1
+            parent = heap[parentpos]
+            if newitem < parent:
+                heap[pos] = parent
+                pos = parentpos
+                continue
+            break
+        heap[pos] = newitem
+        """Load puzzles and define the rules of sokoban"""
+
+def breadth_first_search(grid, Logic):
     """
     Implement breadthFirstSearch approach
     code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
@@ -107,16 +182,134 @@ def breadth_first_search(grid):
                 
                 frontier.append(node + [(newPosPlayer, newPosBox)])
                 actions.append(node_action + [action[-1]])
+
+def depthFirstSearch(grid, Logic):
+    """Implement depthFirstSearch approach"""
+    beginBox = Logic.PosOfBoxes(grid)
+    beginPlayer = Logic.PosOfPlayer(grid)
+
+    startState = (beginPlayer, beginBox)
+    frontier = collections.deque([[startState]])
+    exploredSet = set()
+    actions = [[0]]
+    count = 0
+
+    posGoals = Logic.PosOfGoals(grid)
+    posWalls = Logic.PosOfWalls(grid)
+    while frontier:
+        node = frontier.pop()
+        node_action = actions.pop()
+        if Logic.isEndState(node[-1][1], posGoals):
+            # print(','.join(node_action[1:]).replace(',',''))
+            solution = ','.join(node_action[1:]).replace(',','')
+            print(count)
+            return solution
+            # break
+        if node[-1] not in exploredSet:
+            exploredSet.add(node[-1])
+            for action in Logic.legalActions(node[-1][0], node[-1][1], posWalls):
+                count = count + 1
+                newPosPlayer, newPosBox = Logic.fastUpdate(node[-1][0], node[-1][1], action)
+                if Logic.isFailed(newPosBox, posGoals, posWalls):
+                    continue
+                frontier.append(node + [(newPosPlayer, newPosBox)])
+                actions.append(node_action + [action[-1]])
+
+def heuristic(posPlayer, posBox, posGoals):
+    """A heuristic function to calculate the overall distance between the else boxes and the else goals"""
+    distance = 0
+    completes = set(posGoals) & set(posBox)
+    sortposBox = list(set(posBox).difference(completes))
+    sortposGoals = list(set(posGoals).difference(completes))
+    for i in range(len(sortposBox)):
+        distance += (abs(sortposBox[i][0] - sortposGoals[i][0])) + (abs(sortposBox[i][1] - sortposGoals[i][1]))
+    return distance
+
+def cost(actions):
+    """A cost function"""
+    return len([x for x in actions if x.islower()])
+
+def uniformCostSearch(grid, Logic):
+    """Implement uniformCostSearch approach"""
+    beginBox = Logic.PosOfBoxes(grid)
+    beginPlayer = Logic.PosOfPlayer(grid)
+
+    startState = (beginPlayer, beginBox)
+    frontier = PriorityQueue()
+    frontier.push([startState], 0)
+    exploredSet = set()
+    actions = PriorityQueue()
+    actions.push([0], 0)
+    count = 0
+
+    posGoals = Logic.PosOfGoals(grid)
+    posWalls = Logic.PosOfWalls(grid)
+    while frontier:
+        node = frontier.pop()
+        node_action = actions.pop()
+        if Logic.isEndState(node[-1][1], posGoals):
+            # print(','.join(node_action[1:]).replace(',',''))
+            solution = ','.join(node_action[1:]).replace(',','')
+            print(count)
+            return solution
+            # break
+        if node[-1] not in exploredSet:
+            exploredSet.add(node[-1])
+            Cost = cost(node_action[1:])
+            for action in Logic.legalActions(node[-1][0], node[-1][1], posWalls):
+                count = count + 1
+                newPosPlayer, newPosBox = Logic.fastUpdate(node[-1][0], node[-1][1], action)
+                if Logic.isFailed(newPosBox, posGoals, posWalls):
+                    continue
+                frontier.push(node + [(newPosPlayer, newPosBox)], Cost)
+                actions.push(node_action + [action[-1]], Cost)
+
+def aStarSearch(grid, Logic):
+    """Implement aStarSearch approach"""
+    beginBox = Logic.PosOfBoxes(grid)
+    beginPlayer = Logic.PosOfPlayer(grid)
+    posGoals = Logic.PosOfGoals(grid)
+    posWalls = Logic.PosOfWalls(grid)
+    start_state = (beginPlayer, beginBox)
+    frontier = PriorityQueue()
+    frontier.push([start_state], heuristic(beginPlayer, beginBox, posGoals))
+    exploredSet = set()
+    actions = PriorityQueue()
+    actions.push([0], heuristic(beginPlayer, start_state[1], posGoals))
+    count = 0
+    while frontier:
+        # count = count+1
+        # print('frontier',frontier)
+        if frontier.isEmpty():
+            return 'x'
+        node = frontier.pop()
+        node_action = actions.pop()
+        if Logic.isEndState(node[-1][1], posGoals):
+            solution = ','.join(node_action[1:]).replace(',','')
+            print(count)
+            return solution
+            # break
+        if node[-1] not in exploredSet:
+            exploredSet.add(node[-1])
+            Cost = cost(node_action[1:])
+            for action in Logic.legalActions(node[-1][0], node[-1][1], posWalls):
+                newPosPlayer, newPosBox = Logic.fastUpdate(node[-1][0], node[-1][1], action)
+                if Logic.isFailed(newPosBox, posGoals, posWalls):
+                    continue
+                count = count + 1
+                Heuristic = heuristic(newPosPlayer, newPosBox, posGoals)
+                frontier.push(node + [(newPosPlayer, newPosBox)], Heuristic + Cost)
+                actions.push(node_action + [action[-1]], Heuristic + Cost)
 """
-Example usage:
 Easygrid = np.asarray([
     [1,1,1,1,1,1,1],
     [1,0,0,3,4,0,1],
     [1,2,0,3,0,4,1],
+    [1,0,1,1,1,1,1],
+    [1,0,0,3,0,4,1],
     [1,1,1,1,1,1,1]
 ])
-print(breadth_first_search(Easygrid))
-output:  77 \n urRldRR
+print(aStarSearch(Easygrid, master()))
 """
 
 """

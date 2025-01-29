@@ -89,7 +89,7 @@ class master():
         return tuple(tuple(x) for x in np.argwhere(gameState == 1))
 
     def PosOfGoals(self, gameState):
-        return tuple(tuple(x) for x in np.argwhere((gameState == 4) | (gameState == 5)))
+        return tuple(tuple(x) for x in np.argwhere((gameState == 4) | (gameState == 5) | (gameState == 6)))
 
     def isEndState(self, posBox, posGoals):
         return sorted(posBox) == sorted(posGoals)
