@@ -3,7 +3,8 @@ import random
 import numpy as np
 import torch
 import torch.nn as nn
-
+import collections
+from Logic import master
 
 # Actions mapped to integers
 ACTION_MAP = {
@@ -66,7 +67,49 @@ class MLP(nn.Module):
     
     def forward(self, x):
         return self.network(x)
-    
+
+Logic = master()
+
+def breadth_first_search(grid):
+    """
+    Implement breadthFirstSearch approach
+    code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
+    """
+    beginBox = Logic.PosOfBoxes(grid)
+    beginPlayer = Logic.PosOfPlayer(grid)
+
+    startState = (beginPlayer, beginBox)  # e.g. ((2, 2), ((2, 3), (3, 4), (4, 4), (6, 1), (6, 4), (6, 5)))
+    frontier = collections.deque([[startState]])  # store states
+    actions = collections.deque([[0]])  # store actions
+    exploredSet = set()
+    count = 0
+
+    posGoals = Logic.PosOfGoals(grid)
+    posWalls = Logic.PosOfWalls(grid)
+
+    while frontier:
+        node = frontier.popleft()
+        node_action = actions.popleft()
+
+        if Logic.isEndState(node[-1][1], posGoals):
+            solution = ','.join(node_action[1:]).replace(',', '')
+            print(count)
+            return solution
+
+        if node[-1] not in exploredSet:
+            exploredSet.add(node[-1])
+            for action in Logic.legalActions(node[-1][0], node[-1][1]):
+                count += 1
+                newPosPlayer, newPosBox = Logic.fastUpdate(node[-1][0], node[-1][1], action)
+                
+                if Logic.isFailed(newPosBox, posGoals, posWalls):
+                    continue
+                
+                frontier.append(node + [(newPosPlayer, newPosBox)])
+                actions.append(node_action + [action[-1]])
+
+
+
 """
 Inversed actor critic:
     - with inverse logic we generate backwards steps for simplicity imagine that during training it is breadth first
@@ -80,6 +123,8 @@ Inversed actor critic:
         V(s) = Length of Shortest path to succesful terminal state
 """
 
-def ac(actor, critic, episodes, max_steps=10, lr_a=1e-3, lr_c=1e-3):
+
+
+def ac(actor, critic, episodes, master, max_steps=10, lr_a=1e-3, lr_c=1e-3):
     return
 
