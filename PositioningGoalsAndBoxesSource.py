@@ -11,8 +11,8 @@ def NumberOfBatches(grid, c):
     y, x = grid
     return int(math.sqrt(y*x) + c)
 
-def RandomBatch(grid, num_goals):
-    """Generates a batch of random goal-box arrangements"""
+def RandomArr(grid, num_goals):
+    """Generates a random goal-box arrangement"""
     EmptySpace = np.where(grid == 0)
     for idx in range(num_goals):
         goal_position = random.choice(list(zip(EmptySpace[0], EmptySpace[1])))
