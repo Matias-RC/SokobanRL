@@ -4,6 +4,15 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+
+# Actions mapped to integers
+ACTION_MAP = {
+    0: (-1, 0),  # 'w' (UP)
+    1: (1, 0),   # 's' (DOWN)
+    2: (0, -1),  # 'a' (LEFT)
+    3: (0, 1)    # 'd' (RIGHT)
+}
+
 # Arr : Arrengement of goals and boxes
 # Batch : Set of arrengements
 
@@ -19,6 +28,20 @@ def RandomArr(grid, num_goals):
         grid[goal_position] = 5
         EmptySpace = np.where(grid == 0)
     return grid
+
+#Posible Finishing Positions
+def PFP(grid):
+    """Place player to the side of goals"""
+    positions = []
+    goals = np.where(grid == 5)
+    goals = list(zip(goals[0], goals[1]))
+    for i in goals:
+        for j in range(4):
+            dy, dx = ACTION_MAP[j]
+            if grid[i[0]+dy, i[1]+dx] == 0:
+                positions.append([i[0]+dy, i[1]+dx])
+    return positions
+
 
 class MLP(nn.Module):
     def __init__(self, in_dim, hid_dim, out_dim, num_hidden_layers):
@@ -39,8 +62,20 @@ class MLP(nn.Module):
         # Output layer
         layers.append(nn.Linear(hid_dim, out_dim))
         
-        # Combine all layers into a Sequential module
         self.network = nn.Sequential(*layers)
     
     def forward(self, x):
         return self.network(x)
+    
+"""
+Inversed actor critic:
+    - with inverse logic we generate backwards steps for simplicity imagine that during training it is breadth first
+    - then we train the ActorCritic to determinate what actions lead to bigger reward
+    - We determinate the reward to be the bigger if for longer shortest paths.
+    - Since we only want some basic pattern recognition the AC will only take sorrounding grid area from the player.
+        -> Therfore the size of the input is constant  (padding if needed)
+"""
+
+def ac(actor, critic, episodes, max_steps=10, lr_a=1e-3, lr_c=1e-3):
+    return
+
