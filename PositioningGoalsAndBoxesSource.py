@@ -3,6 +3,7 @@ import random
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import collections
 from Logic import master
 
@@ -337,12 +338,34 @@ Inversed actor critic:
         -> Therfore the size of the input is constant  (padding if needed)
     
         A(s, a) = r(s,a,s') + V(s') - V(s)
-        r(s, a, s') = Delta Box Lines
-        V(s) = Length of Shortest path to succesful terminal state
+        r(s, a, s') = Delta Box Lines (0 or 1)
+        V(s) = Length (in Lines) of Shortest path to succesful terminal state
 """
 
 
+def a2c(actor, critic, state, log_prob, reward, next_state, done, gamma=0.99, lr_a=1e-3, lr_c=1e-3):
+    actor_optimizer = optim.Adam(actor.parameters(), lr=lr_a)
+    critic_optimizer = optim.Adam(critic.parameters(), lr=lr_c)
 
-def ac(actor, critic, episodes, master, max_steps=10, lr_a=1e-3, lr_c=1e-3):
-    return
+    # Compute value estimates
+    value = critic(state)  # Critic's value estimate for current state
+    next_value = critic(next_state).detach()  # Detach to avoid computing gradients
 
+    # Compute the advantage
+    target = reward + gamma * next_value * (1 - done)
+    advantage = target - value
+
+    actor_loss = -torch.mean(log_prob * advantage.detach())  # Negative to maximize
+
+    # Compute critic loss (MSE loss)
+    critic_loss = nn.MSELoss()(value, target.detach())
+
+    # Update actor
+    actor_optimizer.zero_grad()
+    actor_loss.backward()
+    actor_optimizer.step()
+
+    # Update critic
+    critic_optimizer.zero_grad()
+    critic_loss.backward()
+    critic_optimizer.step()
