@@ -184,7 +184,10 @@ def breadth_first_search(grid, Logic):
                 actions.append(node_action + [action[-1]])
 
 def depthFirstSearch(grid, Logic):
-    """Implement depthFirstSearch approach"""
+    """
+    Implement depthFirstSearch approach
+    code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
+    """
     beginBox = Logic.PosOfBoxes(grid)
     beginPlayer = Logic.PosOfPlayer(grid)
 
@@ -216,7 +219,10 @@ def depthFirstSearch(grid, Logic):
                 actions.append(node_action + [action[-1]])
 
 def heuristic(posPlayer, posBox, posGoals):
-    """A heuristic function to calculate the overall distance between the else boxes and the else goals"""
+    """
+    A heuristic function to calculate the overall distance between the else boxes and the else goals
+    code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
+    """
     distance = 0
     completes = set(posGoals) & set(posBox)
     sortposBox = list(set(posBox).difference(completes))
@@ -226,11 +232,17 @@ def heuristic(posPlayer, posBox, posGoals):
     return distance
 
 def cost(actions):
-    """A cost function"""
+    """
+    A cost function
+    code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
+    """
     return len([x for x in actions if x.islower()])
 
 def uniformCostSearch(grid, Logic):
-    """Implement uniformCostSearch approach"""
+    """
+    Implement uniformCostSearch approach
+    code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
+    """
     beginBox = Logic.PosOfBoxes(grid)
     beginPlayer = Logic.PosOfPlayer(grid)
 
@@ -265,7 +277,10 @@ def uniformCostSearch(grid, Logic):
                 actions.push(node_action + [action[-1]], Cost)
 
 def aStarSearch(grid, Logic):
-    """Implement aStarSearch approach"""
+    """
+    Implement aStarSearch approach
+    code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
+    """
     beginBox = Logic.PosOfBoxes(grid)
     beginPlayer = Logic.PosOfPlayer(grid)
     posGoals = Logic.PosOfGoals(grid)
@@ -301,6 +316,7 @@ def aStarSearch(grid, Logic):
                 frontier.push(node + [(newPosPlayer, newPosBox)], Heuristic + Cost)
                 actions.push(node_action + [action[-1]], Heuristic + Cost)
 """
+Example usage:
 Easygrid = np.asarray([
     [1,1,1,1,1,1,1],
     [1,0,0,3,4,0,1],
