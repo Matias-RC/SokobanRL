@@ -1,7 +1,5 @@
 import numpy as np
 import pickle
-
-from regex import B
 import BuildRoomSource as source
 
 # Load templates and validate
