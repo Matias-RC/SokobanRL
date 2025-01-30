@@ -114,6 +114,47 @@ def GenerateEmptyGrid(height, width):
     array = np.pad(array, pad_width=1, mode='constant', constant_values=1)
     return array
 
+def FillWithGoalBoxes(grid, n, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    
+    height, width = grid.shape
+    empty_positions = [(i, j) for i in range(1, height - 1) for j in range(1, width - 1)]
+    
+    np.random.shuffle(empty_positions)
+    placed = 0
+    for i, j in empty_positions:
+        if placed >= n:
+            break
+        if all(grid[i + di, j + dj] == 0 for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]):
+            grid[i, j] = 5
+            placed += 1
+    
+    return grid
+
+def FillWithWalls(grid, n, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    
+    height, width = grid.shape
+    empty_positions = [(i, j) for i in range(1, height - 1) for j in range(1, width - 1) if grid[i, j] == 0]
+    
+    np.random.shuffle(empty_positions)
+    placed = 0
+    for i, j in empty_positions:
+        if placed >= n:
+            break
+        temp_grid = grid.copy()
+        temp_grid[i, j] = 1
+        
+        fives_positions = np.argwhere(temp_grid == 5)
+        if all(any(temp_grid[i + di, j + dj] == 0 for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]) for i, j in fives_positions) and is_connected(temp_grid):
+            grid[i, j] = 1
+            placed += 1
+    
+    return grid
+
+
 # Actions mapped to integers
 ACTION_MAP = {
     0: (-1, 0),  # 'w' (UP)
