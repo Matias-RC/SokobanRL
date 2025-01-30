@@ -154,6 +154,23 @@ def FillWithWalls(grid, n, seed=None):
     
     return grid
 
+def PlacePlayer(grid, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    posibleEndStates = []
+    goalBoxes = np.argwhere(grid == 5)
+    for i, j in goalBoxes:
+        for di, dj in [(-1, 0),(1, 0), (0, -1),(0, 1)]:
+            if grid[i+di,j+dj] == 0 and grid[i+di*2,j+dj*2] == 0:
+                posibleEndStates.append((i+di,j+dj))
+    np.random.shuffle(posibleEndStates)
+    try:
+        y,x = posibleEndStates[0]
+        grid[y,x] = 2
+        return grid
+    except:
+        return False
+
 
 """
 ----------------------------------------------------------------------
