@@ -511,39 +511,14 @@ print(aStarSearch(Easygrid, master()))
 """
 
 """
-Inversed Value function:
-        V(s) = E_a\sim\pi[\sum(to infinity)gamma*r(a,s,a')]
-        r(s,a,s') = delta length (in Lines) of Shortest path to succesful terminal state NORMALIZED
-        since \pi = uniform, target = avg
+Predict how benefitial is a move compared to the current state and the other posible moves
+-> From -1 (not useful at all) to +1 (most defenetly useful)
+
+For this we employ a technique similar to the value value function. We define the depth and the breadth is set to the maximal.
+-> A longer Depth and a bigger Model produce better results but also require a lot of computational power.
+Proposed depth = 4
+Proposed model takes in sorrounding grid action to evaluate and set of actions that lead to a solution.
+sorrounding grid = 5*5 with four chanels each -> 100
+set of actions 4*1 with asingle chanel each -> 4
+actions that led to the solution -> vector representation 10*1
 """
-
-
-def TrainValue(ValueFunc, Value_optimizer, state, reward, next_ActionStates, gamma=0.75):
-    # Compute Value estimates
-    value = ValueFunc(state)  # value estimate for current state
-    target = 0
-    for  i in next_ActionStates:
-        target += reward + gamma*ValueFunc(i[0]).detach()* (1-i[1])  # Detach next state value to avoid backprop
-    avg_target = target/len(next_ActionStates)
-
-    # Compute MSE loss
-    Val_loss = nn.MSELoss()(value, avg_target.detach())
-
-    # Update the Value Function
-    Value_optimizer.zero_grad()
-    Val_loss.backward()
-    Value_optimizer.step()
-
-    return Val_loss.item()
-
-def TrainPolicy(Policy, Policy_optimizer, state,action, reward, ValueFunc,next_state, gamma=0.75):
-    #compute critic:
-    a2c = reward + ValueFunc(next_state).detach() - ValueFunc(state).detach()
-
-    PolicyLoss = nn.BCELoss()(a2c.detach()*Policy(action))
-
-    Policy_optimizer.zero_grad()
-    PolicyLoss.backwards()
-    Policy_optimizer.step()
-
-    return PolicyLoss.item()
