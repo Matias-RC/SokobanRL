@@ -26,12 +26,21 @@ for i in batches:
 """
 
 
-episodes = 1000
+episodes = 1
 lr_c = 1e-3
 
-critic = source.MLP(in_dim=64,hid_dim=32,out_dim=1, num_hidden_layers=3)
+critic = source.MLP(in_dim=52,hid_dim=26,out_dim=1, num_hidden_layers=2)
 critic_optimizer = optim.Adam(critic.parameters(), lr=lr_c)
 
 Seeds = source.MakeSeedsList(episodes)
-for ep in Seeds:
+GridDims = source.MakeDimsList(0,7,1)
+BoxNums = source.RandVariablelist(0, 1, 1)
+WallsNums = source.RandVariablelist(2, 9, 1)
+
+for idx, ep in enumerate(Seeds):
+    grid = source.GenerateEmptyGrid(GridDims[idx][0], GridDims[idx][1])
+    grid = source.FillWithGoalBoxes(grid, BoxNums[idx], ep)
+    grid = source.FillWithWalls(grid, WallsNums[idx], ep)
+    
+
     pass

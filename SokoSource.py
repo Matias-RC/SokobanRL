@@ -148,7 +148,7 @@ def FillWithWalls(grid, n, seed=None):
         temp_grid[i, j] = 1
         
         fives_positions = np.argwhere(temp_grid == 5)
-        if all(any(temp_grid[i + di, j + dj] == 0 for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]) for i, j in fives_positions) and is_connected(temp_grid):
+        if all(any(temp_grid[i + di, j + dj] == 0 for di, dj in [(-1, 0), (0, 1)]) for i, j in fives_positions) and all(any(temp_grid[i+di,j+dj] == 0 for di, dj in [(1, 0), (0, -1)]) for i, j in fives_positions) and is_connected(temp_grid):
             grid[i, j] = 1
             placed += 1
     
@@ -164,6 +164,12 @@ More utils:
 def MakeSeedsList(n):
     return [random.randint(0, 10000) for _ in range(n)]
 
+def MakeDimsList(rango, reference, n):
+    return [(random.randint(reference-rango, reference+rango),
+             random.randint(reference-rango, reference+rango)) for _ in range(n)]
+
+def RandVariablelist(rango, reference, n):
+    return [random.randint(reference-rango,reference+rango) for _ in range(n)]
 
 # Actions mapped to integers
 ACTION_MAP = {
@@ -501,16 +507,10 @@ Inversed actor critic:
 """
 
 
-def a2c(critic, critic_optimizer, state, reward, next_state, done, gamma=0.75):
-    # Convert inputs to tensors (if they aren’t already)
-    state = torch.tensor(state, dtype=torch.float32)
-    next_state = torch.tensor(next_state, dtype=torch.float32)
-    reward = torch.tensor(reward, dtype=torch.float32)
-    done = torch.tensor(done, dtype=torch.float32)
-
-    # Compute value estimates
-    value = critic(state)  # Critic's value estimate for current state
-    next_value = critic(next_state).detach()  # Detach next state value to avoid backprop
+def a2c(critic, critic_optimizer, ActionState, reward, next_ActionState, done, gamma=0.75):
+    # Compute critic estimates
+    value = critic(ActionState)  # Critic's value estimate for current state
+    next_value = critic(next_ActionState).detach()  # Detach next state value to avoid backprop
     target = reward + gamma * next_value * (1 - done)  # Compute target
 
     # Compute MSE loss
