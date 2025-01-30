@@ -212,3 +212,24 @@ class master():
             grid[row, col] = 4 if grid[row, col] == 6 else 0
             grid[prev_row, prev_col] = 6 if grid[prev_row, prev_col] == 4 else 2
         return grid
+    """
+    Fast Inverse logic
+    """
+    def isLegalInversion(self, action, posPlayer, posBox, posWalls,):
+        xPlayer, yPlayer = posPlayer
+        x1, y1 = xPlayer - action[0], yPlayer - action[1]
+        return (x1, y1) not in posBox + posWalls
+    def legalInverts(self, posPlayer, posBox, posWalls, posGoals):
+        allActions = [[-1,0,],[1,0],[0,-1],[0,1]]
+        #up, down, left, right
+        xPlayer, yPlayer = posPlayer
+        legalActions = []
+        for action in allActions:
+            x1, y1 = xPlayer + action[0], yPlayer + action[1]
+            temp_boxes = posBox.copy()
+            temp_boxes = [(xPlayer, yPlayer) if i == (x1, y1) else i for i in temp_boxes]
+            if self.isLegalAction(action, posPlayer, posBox, posWalls) and not self.isEndState(temp_boxes, posGoals):
+                legalActions.append(action)
+            else:
+                continue
+        return tuple(tuple(x) for x in legalActions)
