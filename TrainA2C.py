@@ -33,7 +33,7 @@ critic = source.MLP(in_dim=52,hid_dim=26,out_dim=1, num_hidden_layers=2)
 critic_optimizer = optim.Adam(critic.parameters(), lr=lr_c)
 
 Seeds = source.MakeSeedsList(episodes)
-GridDims = source.MakeDimsList(2,7,episodes)
+GridDims = source.MakeDimsList(2,8,episodes)
 BoxNums = source.RandVariablelist(1, 2, episodes)
 WallsNums = source.RandVariablelist(2, 9, episodes)
 
