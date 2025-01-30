@@ -102,3 +102,8 @@ def BuildRoom(level_width, level_height, templates):
         if is_connected(grid):
             break
     return grid
+
+def GenerateEmpty(height, width):
+    array = np.zeros((height, width), dtype=int)
+    array = np.pad(array, pad_width=1, mode='constant', constant_values=1)
+    return array
