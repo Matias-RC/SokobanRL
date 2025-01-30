@@ -1,6 +1,6 @@
 import numpy as np
 import pickle
-import BuildRoomSource as source
+import SokoSource as source
 
 # Load templates and validate
 with open("templates/templates.pkl", "rb") as f:

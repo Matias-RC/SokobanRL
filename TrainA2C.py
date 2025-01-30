@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 import collections
 from Logic import master
-import PositioningGoalsAndBoxesSource as Source
+import SokoSource as source
 
 """
 EzEps = {ep1,...,epn}
