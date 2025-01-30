@@ -220,16 +220,21 @@ class master():
         x1, y1 = xPlayer - action[0], yPlayer - action[1]
         return (x1, y1) not in posBox + posWalls
     def legalInverts(self, posPlayer, posBox, posWalls, posGoals):
-        allActions = [[-1,0,],[1,0],[0,-1],[0,1]]
-        #up, down, left, right
+        allActions = [[-1,0], [1,0], [0,-1], [0,1]]  # up, down, left, right
         xPlayer, yPlayer = posPlayer
         legalActions = []
+
         for action in allActions:
             x1, y1 = xPlayer + action[0], yPlayer + action[1]
-            temp_boxes = posBox.copy()
+
+            # Convert tuple to list for modification
+            temp_boxes = list(posBox)  
             temp_boxes = [(xPlayer, yPlayer) if i == (x1, y1) else i for i in temp_boxes]
-            if self.isLegalAction(action, posPlayer, posBox, posWalls) and not self.isEndState(temp_boxes, posGoals):
+
+            # Convert back to tuple
+            temp_boxes = tuple(temp_boxes)
+
+            if self.isLegalInversion(action, posPlayer, posBox, posWalls) and not self.isEndState(temp_boxes, posGoals):
                 legalActions.append(action)
-            else:
-                continue
+
         return tuple(tuple(x) for x in legalActions)

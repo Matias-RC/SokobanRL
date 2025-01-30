@@ -37,9 +37,16 @@ GridDims = source.MakeDimsList(2,7,episodes)
 BoxNums = source.RandVariablelist(1, 2, episodes)
 WallsNums = source.RandVariablelist(2, 9, episodes)
 
+logics = master()
+
 for idx, ep in enumerate(Seeds):
     grid = source.GenerateEmptyGrid(GridDims[idx][0], GridDims[idx][1])
     grid = source.FillWithGoalBoxes(grid, BoxNums[idx], ep)
     grid = source.FillWithWalls(grid, WallsNums[idx], ep)
     grid = source.PlacePlayer(grid, ep)
-    
+    print(grid)
+    posBox = logics.PosOfBoxes(grid)
+    posWalls = logics.PosOfWalls(grid)
+    posGoals = logics.PosOfGoals(grid)
+    posPlayer = logics.PosOfPlayer(grid)
+    print(logics.legalInverts(posPlayer, posBox, posWalls, posGoals))
