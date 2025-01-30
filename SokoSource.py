@@ -155,6 +155,16 @@ def FillWithWalls(grid, n, seed=None):
     return grid
 
 
+"""
+----------------------------------------------------------------------
+More utils:
+----------------------------------------------------------------------
+"""
+
+def MakeSeedsList(n):
+    return [random.randint(0, 10000) for _ in range(n)]
+
+
 # Actions mapped to integers
 ACTION_MAP = {
     0: (-1, 0),  # 'w' (UP)

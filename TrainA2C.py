@@ -26,3 +26,12 @@ for i in batches:
 """
 
 
+episodes = 1000
+lr_c = 1e-3
+
+critic = source.MLP(in_dim=64,hid_dim=32,out_dim=1, num_hidden_layers=3)
+critic_optimizer = optim.Adam(critic.parameters(), lr=lr_c)
+
+Seeds = source.MakeSeedsList(episodes)
+for ep in Seeds:
+    pass
