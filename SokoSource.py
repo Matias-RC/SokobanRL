@@ -511,31 +511,25 @@ print(aStarSearch(Easygrid, master()))
 """
 
 """
-Inversed actor critic:
-    - with inverse logic we generate backwards steps for simplicity imagine that during training it is breadth first
-    - then we train the ActorCritic to determinate what actions lead to bigger reward
-    - We determinate the reward to be the bigger if for longer shortest paths.
-    - Since we only want some basic pattern recognition the AC will only take sorrounding grid area from the player.
-        -> Therfore the size of the input is constant  (padding if needed)
-    
-        A(s, a) = r(s,a,s') + V(s') - V(s)
-        r(s, a, s') = Delta Box Lines (0 or 1)
+Inversed Value function:
         V(s) = Length (in Lines) of Shortest path to succesful terminal state
 """
 
 
-def a2c(critic, critic_optimizer, ActionState, reward, next_ActionState, done, gamma=0.75):
-    # Compute critic estimates
-    value = critic(ActionState)  # Critic's value estimate for current state
-    next_value = critic(next_ActionState).detach()  # Detach next state value to avoid backprop
-    target = reward + gamma * next_value * (1 - done)  # Compute target
+def TrainValue(ValueFunc, Value_optimizer, state, next_ActionStates, gamma=0.75):
+    # Compute Value estimates
+    value = ValueFunc(state)  # value estimate for current state
+    target = 0
+    for  i in next_ActionStates:
+        target += i[0] + gamma* ValueFunc(i[1]).detach()* (1-i[2])  # Detach next state value to avoid backprop
+    avg_target = target/len(next_ActionStates)
 
     # Compute MSE loss
-    critic_loss = nn.MSELoss()(value, target.detach())
+    Val_loss = nn.MSELoss()(value, avg_target.detach())
 
-    # Update the critic
-    critic_optimizer.zero_grad()
-    critic_loss.backward()
-    critic_optimizer.step()
+    # Update the Value Function
+    Value_optimizer.zero_grad()
+    Val_loss.backward()
+    Value_optimizer.step()
 
-    return critic_loss.item()
+    return Val_loss.item()
