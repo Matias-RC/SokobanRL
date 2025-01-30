@@ -49,4 +49,7 @@ for idx, ep in enumerate(Seeds):
     posWalls = logics.PosOfWalls(grid)
     posGoals = logics.PosOfGoals(grid)
     posPlayer = logics.PosOfPlayer(grid)
-    print(logics.legalInverts(posPlayer, posBox, posWalls, posGoals))
+    InverTuple, PosiblePosBox = logics.legalInverts(posPlayer, posBox, posWalls, posGoals)
+    print(InverTuple[0])
+    posPlayer = logics.FastInvert(posPlayer,InverTuple[0])
+    print(logics.legalInverts(posPlayer, PosiblePosBox[0], posWalls, posGoals)[0])
