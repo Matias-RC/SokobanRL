@@ -235,6 +235,11 @@ class master():
             temp_boxes = tuple(temp_boxes)
 
             if self.isLegalInversion(action, posPlayer, posBox, posWalls) and not self.isEndState(temp_boxes, posGoals):
-                legalActions.append(action)
+                legalActions.append(action+[temp_boxes])
 
         return tuple(tuple(x) for x in legalActions)
+    def FastInvert(self, posPlayer,posBox, action):
+        xPlayer, yPlayer = posPlayer # the previous position of player
+        newPosPlayer = [xPlayer - action[0], yPlayer - action[1]] # the current position of player
+        posBox = action[2]
+        return newPosPlayer, posBox
