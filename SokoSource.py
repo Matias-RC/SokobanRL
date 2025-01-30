@@ -512,16 +512,18 @@ print(aStarSearch(Easygrid, master()))
 
 """
 Inversed Value function:
-        V(s) = Length (in Lines) of Shortest path to succesful terminal state
+        V(s) = E_a\sim\pi[\sum(to infinity)gamma*r(a,s,a')]
+        r(s,a,s') = delta length (in Lines) of Shortest path to succesful terminal state NORMALIZED
+        since \pi = uniform, target = avg
 """
 
 
-def TrainValue(ValueFunc, Value_optimizer, state, next_ActionStates, gamma=0.75):
+def TrainValue(ValueFunc, Value_optimizer, state, reward, next_ActionStates, gamma=0.75):
     # Compute Value estimates
     value = ValueFunc(state)  # value estimate for current state
     target = 0
     for  i in next_ActionStates:
-        target += i[0] + gamma* ValueFunc(i[1]).detach()* (1-i[2])  # Detach next state value to avoid backprop
+        target += reward + gamma* ValueFunc(i[0]).detach()* (1-i[1])  # Detach next state value to avoid backprop
     avg_target = target/len(next_ActionStates)
 
     # Compute MSE loss
