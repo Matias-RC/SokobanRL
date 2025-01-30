@@ -343,29 +343,24 @@ Inversed actor critic:
 """
 
 
-def a2c(actor, critic, state, log_prob, reward, next_state, done, gamma=0.99, lr_a=1e-3, lr_c=1e-3):
-    actor_optimizer = optim.Adam(actor.parameters(), lr=lr_a)
-    critic_optimizer = optim.Adam(critic.parameters(), lr=lr_c)
+def a2c(critic, critic_optimizer, state, reward, next_state, done, gamma=0.75):
+    # Convert inputs to tensors (if they aren’t already)
+    state = torch.tensor(state, dtype=torch.float32)
+    next_state = torch.tensor(next_state, dtype=torch.float32)
+    reward = torch.tensor(reward, dtype=torch.float32)
+    done = torch.tensor(done, dtype=torch.float32)
 
     # Compute value estimates
     value = critic(state)  # Critic's value estimate for current state
-    next_value = critic(next_state).detach()  # Detach to avoid computing gradients
+    next_value = critic(next_state).detach()  # Detach next state value to avoid backprop
+    target = reward + gamma * next_value * (1 - done)  # Compute target
 
-    # Compute the advantage
-    target = reward + gamma * next_value * (1 - done)
-    advantage = target - value
-
-    actor_loss = -torch.mean(log_prob * advantage.detach())  # Negative to maximize
-
-    # Compute critic loss (MSE loss)
+    # Compute MSE loss
     critic_loss = nn.MSELoss()(value, target.detach())
 
-    # Update actor
-    actor_optimizer.zero_grad()
-    actor_loss.backward()
-    actor_optimizer.step()
-
-    # Update critic
+    # Update the critic
     critic_optimizer.zero_grad()
     critic_loss.backward()
     critic_optimizer.step()
+
+    return critic_loss.item()
