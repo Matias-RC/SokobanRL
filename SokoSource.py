@@ -523,7 +523,7 @@ def TrainValue(ValueFunc, Value_optimizer, state, reward, next_ActionStates, gam
     value = ValueFunc(state)  # value estimate for current state
     target = 0
     for  i in next_ActionStates:
-        target += reward + gamma* ValueFunc(i[0]).detach()* (1-i[1])  # Detach next state value to avoid backprop
+        target += reward + gamma*ValueFunc(i[0]).detach()* (1-i[1])  # Detach next state value to avoid backprop
     avg_target = target/len(next_ActionStates)
 
     # Compute MSE loss
@@ -535,3 +535,15 @@ def TrainValue(ValueFunc, Value_optimizer, state, reward, next_ActionStates, gam
     Value_optimizer.step()
 
     return Val_loss.item()
+
+def TrainPolicy(Policy, Policy_optimizer, state,action, reward, ValueFunc,next_state, gamma=0.75):
+    #compute critic:
+    a2c = reward + ValueFunc(next_state).detach() - ValueFunc(state).detach()
+
+    PolicyLoss = nn.BCELoss()(a2c.detach()*Policy(action))
+
+    Policy_optimizer.zero_grad()
+    PolicyLoss.backwards()
+    Policy_optimizer.step()
+
+    return PolicyLoss.item()
