@@ -8,7 +8,7 @@ ACTION_MAP = {
     3: (0, 1)    # 'd' (RIGHT)
 }
 
-class master():
+class Logic():
     def __init__(self):
         pass
     def update_environment(self, grid, action):
@@ -244,3 +244,60 @@ class master():
         xPlayer, yPlayer = posPlayer # the previous position of player
         newPosPlayer = [xPlayer - action[0], yPlayer - action[1]] # the current position of player
         return newPosPlayer
+    def MoveUntilMultipleOptions(self, posPlayer, posBox, posGoals, posWalls):
+        """
+        Moves the player (and boxes if needed) until multiple legal inversion actions are available.
+        This is a simple iterative approach that stops when more than one inversion is legal.
+        Returns:
+            (stop_flag, newPosBox, newPosPlayer)
+        """
+        max_iter = 50  # prevent infinite loops
+        iter_count = 0
+        while iter_count < max_iter:
+            legal_inverts, NewposBox = self.legalInverts(posPlayer, posBox, posWalls, posGoals)
+            if len(legal_inverts) > 1:
+                return False, posBox, posPlayer
+            # If only one move is available, take it.
+            if len(legal_inverts) == 0:
+                return True, posBox, posPlayer  # stuck
+            action = legal_inverts[0]
+            posPlayer = self.fastUpdate(posPlayer, posBox, action)
+            posBox = NewposBox
+            iter_count += 1
+        return True, posBox, posPlayer
+    def aStar(self, beginPlayer, beginBox, posGoals, posWalls, PriorityQueue, heuristic, cost):
+        start_state = (beginPlayer, beginBox)
+        frontier = PriorityQueue()
+        frontier.push([start_state], heuristic(beginPlayer, beginBox, posGoals))
+        exploredSet = set()
+        actions = PriorityQueue()
+        actions.push([0], heuristic(beginPlayer, start_state[1], posGoals))
+        count = 0
+        while frontier:
+            # count = count+1
+            # print('frontier',frontier)
+            if frontier.isEmpty():
+                return 'x'
+            node = frontier.pop()
+            node_action = actions.pop()
+            if self.isEndState(node[-1][1], posGoals):
+                solution = ','.join(node_action[1:]).replace(',','')
+                oneHot = []
+                for i in solution:
+                    if i == "u" or "U": oneHot.append([1,0,0,0])
+                    elif i == "l" or "L": oneHot.append([0,1,0,0])
+                    elif i == "d" or "D": oneHot.append([0,0,1,0])
+                    else: oneHot.append([0,0,0,1])
+                return oneHot
+                # break
+            if node[-1] not in exploredSet:
+                exploredSet.add(node[-1])
+                Cost = cost(node_action[1:])
+                for action in self.legalActions(node[-1][0], node[-1][1], posWalls):
+                    newPosPlayer, newPosBox = self.fastUpdate(node[-1][0], node[-1][1], action)
+                    if self.isFailed(newPosBox, posGoals, posWalls):
+                        continue
+                    count = count + 1
+                    Heuristic = heuristic(newPosPlayer, newPosBox, posGoals)
+                    frontier.push(node + [(newPosPlayer, newPosBox)], Heuristic + Cost)
+                    actions.push(node_action + [action[-1]], Heuristic + Cost)
