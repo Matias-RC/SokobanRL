@@ -518,12 +518,62 @@ For this we employ a technique similar to the value value function. We define th
 -> A longer Depth and a bigger Model produce better results but also require a lot of computational power.
 Proposed depth = 4
 Proposed model takes in sorrounding grid action to evaluate and set of actions that lead to a solution.
-sorrounding grid = 5*5 with four chanels each -> 100
+sorrounding grid = 5*5 with three (boxes goals walls) chanels each -> 75
 set of actions 4*1 with asingle chanel each -> 4
 actions that led to the solution -> 4*4 (first four action the aStarSearch does to get to the solutions)
-total = 120 in
-hidden = 60 per layer for 2 hidden layers
+total = 95 in
+hidden = 50 per layer for 2 hidden layers
 out = 1
 """
 
+inverBFSTP = MLP(in_dim=95,hid_dim=50,out_dim=1,num_hidden_layers=2)
 
+def ActionStateEval(action, posPlayer, posBox, posWalls, posGoals, AstarSolution, ibfs):
+    boxesChanel = []
+    wallsChanel = []
+    goalsChanel = []
+    posBox = list(posBox) 
+    posWalls = list(posWalls)
+    posGoals = list(posGoals)
+    for i in posBox:
+        if posPlayer[0]-5 <= i[0] <= posPlayer[0]+5 and  posPlayer[1]-5 <= i[1] <= posPlayer[1]+5:
+            boxesChanel.append(1)
+        else:
+            boxesChanel.append(0)
+    for i in posWalls:
+        if posPlayer[0]-5 <= i[0] <= posPlayer[0]+5 and  posPlayer[1]-5 <= i[1] <= posPlayer[1]+5:
+            wallsChanel.append(1)
+        else:
+            wallsChanel.append(0)
+    for i in posGoals:
+        if posPlayer[0]-5 <= i[0] <= posPlayer[0]+5 and  posPlayer[1]-5 <= i[1] <= posPlayer[1]+5:
+            goalsChanel.append(1)
+        else:
+            goalsChanel.append(0)
+    boxesChanel = torch.tensor(boxesChanel)
+    wallsChanel  = torch.tensor(wallsChanel)
+    goalsChanel = torch.tensor(goalsChanel)
+
+    #To Do - check waht dtype the action is  put in, here I assume that is one hot encoding alredy.
+
+    action = torch.tensor(action)
+    AstarSolution =  torch.tensor(AstarSolution)
+    modelInput = torch.stack((boxesChanel,wallsChanel,goalsChanel,action,AstarSolution))
+    return ibfs(modelInput)
+
+def breadthFirstSearch_TPTrain(grid, Logic):
+    beginBox  = Logic.PosOfBoxes(grid)
+    beginPlayer = Logic.PosOfPlayer(grid)
+
+    startState =  (beginPlayer, beginBox)
+    frontier = collections.deque([[startState]])
+    action = collections.deque([[0]])
+
+    exploredSet = dict() # grid : shortest solution
+
+    posGoals = beginBox
+    posWalls = Logic.PosOfWalls(grid)
+    stop, beginBox, beginPlayer = Logic.MoveUntilMultipleOptions(beginPlayer,  beginBox, posGoals, posWalls)
+    if stop:
+        return False
+    
