@@ -520,5 +520,10 @@ Proposed depth = 4
 Proposed model takes in sorrounding grid action to evaluate and set of actions that lead to a solution.
 sorrounding grid = 5*5 with four chanels each -> 100
 set of actions 4*1 with asingle chanel each -> 4
-actions that led to the solution -> vector representation 10*1
+actions that led to the solution -> 4*4 (first four action the aStarSearch does to get to the solutions)
+total = 120 in
+hidden = 60 per layer for 2 hidden layers
+out = 1
 """
+
+
