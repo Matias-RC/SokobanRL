@@ -561,19 +561,95 @@ def ActionStateEval(action, posPlayer, posBox, posWalls, posGoals, AstarSolution
     modelInput = torch.stack((boxesChanel,wallsChanel,goalsChanel,action,AstarSolution))
     return ibfs(modelInput)
 
-def breadthFirstSearch_TPTrain(grid, Logic):
-    beginBox  = Logic.PosOfBoxes(grid)
+def breadthFirstSearch_TPTrain(grid, Logic, ibfs, optimizer, loss_fn):
+    import collections
+    
+    beginBox = Logic.PosOfBoxes(grid)
     beginPlayer = Logic.PosOfPlayer(grid)
-
-    startState =  (beginPlayer, beginBox)
-    frontier = collections.deque([[startState]])
-    action = collections.deque([[0]])
-
-    exploredSet = dict() # grid : shortest solution
-
-    posGoals = beginBox
+    startState = (beginPlayer, beginBox)
+    
+    frontier = collections.deque([[startState]])  # BFS queue
+    actions = collections.deque([[0]])  # Corresponding actions
+    
+    exploredSet = {}  # Stores state -> shortest A* solution
+    
+    posGoals = beginBox  # Temporary goal positions for inverse search
     posWalls = Logic.PosOfWalls(grid)
-    stop, beginBox, beginPlayer = Logic.MoveUntilMultipleOptions(beginPlayer,  beginBox, posGoals, posWalls)
+    
+    # Move player to a state where multiple actions are possible
+    stop, beginBox, beginPlayer = Logic.MoveUntilMultipleOptions(beginPlayer, beginBox, posGoals, posWalls)
     if stop:
         return False
+    
+    while frontier:
+        node = frontier.popleft()
+        node_action = actions.popleft()
+        currentPlayer, currentBox = node[-1]
+        
+        # Retrieve legal inverse actions
+        legal_inverts = Logic.legalInverts(currentPlayer, currentBox, posWalls, posGoals)
+        if not legal_inverts:
+            continue  # Skip if no legal actions available
+        
+        best_branch = None
+        best_solution = None
+        worst_solution = None
+        
+        # Depth-4 exploration
+        depth_frontier = collections.deque([(currentPlayer, currentBox, 0, [])])
+        
+        while depth_frontier:
+            posPlayer, posBox, depth, path = depth_frontier.popleft()
+            
+            if depth >= 4:
+                continue  # Stop at depth 4
+            
+            for action, newBoxConfig in Logic.legalInverts(posPlayer, posBox, posWalls, posGoals):
+                newPosPlayer, newPosBox = Logic.fastUpdate(posPlayer, posBox, action)
+                
+                # Run A* to get the solution length
+                AstarSolution = Logic.AStarSearch(newPosPlayer, newPosBox, posGoals, posWalls)
+                if AstarSolution is None:
+                    continue  # Skip if no solution exists
+                
+                path_length = len(AstarSolution)
+                
+                # Track best and worst solutions
+                if best_solution is None or path_length > len(best_solution):
+                    best_solution = AstarSolution
+                    best_branch = (newPosPlayer, newPosBox, action, AstarSolution)
+                
+                if worst_solution is None or path_length < len(worst_solution):
+                    worst_solution = AstarSolution
+                
+                # Continue depth search
+                depth_frontier.append((newPosPlayer, newPosBox, depth + 1, path + [action]))
+        
+        # Evaluate best solution with ActionStateEval
+        if best_branch:
+            posPlayer, posBox, best_action, best_AstarSolution = best_branch
+            eval_output = ActionStateEval(best_action, posPlayer, posBox, posWalls, posGoals, best_AstarSolution, ibfs)
+            
+            # Normalize labels between -1 and 1
+            worst_len = len(worst_solution) if worst_solution else 1
+            best_len = len(best_solution) if best_solution else worst_len + 1
+            target_value = 2 * (len(best_AstarSolution) - worst_len) / (best_len - worst_len) - 1
+            
+            # Compute loss and backpropagate
+            loss = loss_fn(eval_output, torch.tensor([target_value], dtype=torch.float32))
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        
+        # Store best solution for training
+        exploredSet[(currentPlayer, currentBox)] = best_solution
+        
+        # Expand to next BFS layer
+        for action, newBoxConfig in legal_inverts:
+            newPosPlayer, newPosBox = Logic.fastUpdate(currentPlayer, currentBox, action)
+            frontier.append(node + [(newPosPlayer, newPosBox)])
+            actions.append(node_action + [action])
+    
+    return True
+
     
