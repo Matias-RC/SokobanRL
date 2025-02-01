@@ -223,12 +223,15 @@ class master():
         x1, y1 = xPlayer - action[0], yPlayer - action[1]
         return (x1, y1) not in posBox + posWalls
     def legalInverts(self, posPlayer, posBox, posWalls, posGoals):
-        allActions = [[-1,0], [1,0], [0,-1], [0,1]]  # up, down, left, right
+        allActions = [[-1,0,[1,0,0,0,0],[1,0,0,0,1]],
+                      [0,-1,[0,1,0,0,0],[0,1,0,0,1]],
+                      [1,0,[0,0,1,0,0],[0,0,1,0,1]],
+                      [0,1,[0,0,0,1,0],[0,0,0,1,1]]]
         xPlayer, yPlayer = posPlayer
         legalActions = []
         nextBoxArrengements = []
         for action in allActions:
-            x1, y1 = xPlayer + action[0], yPlayer + action[1]
+            x1, y1 = xPlayer + action[0][0], yPlayer + action[0][1]
 
             # Convert tuple to list for modification
             temp_boxes = list(posBox)  
@@ -237,8 +240,8 @@ class master():
             # Convert back to tuple
             temp_boxes = tuple(temp_boxes)
 
-            if self.isLegalInversion(action, posPlayer, posBox, posWalls) and not self.isEndState(temp_boxes, posGoals):
-                legalActions.append(action)
+            if self.isLegalInversion(action[0], posPlayer, posBox, posWalls) and not self.isEndState(temp_boxes, posGoals):
+                legalActions.append(action[1][:-1])
                 nextBoxArrengements.append(temp_boxes)
                 
 
@@ -284,7 +287,7 @@ class master():
             node = frontier.pop()
             node_action = actions.pop()
             if self.isEndState(node[-1][1], posGoals):
-                solution = ','.join(node_action[1:]).replace(',','')
+                solution = node_action[1:]
                 return solution
                 # break
             if node[-1] not in exploredSet:

@@ -598,8 +598,8 @@ def evaluate_root_actions(posPlayer, posBox, posWalls, posGoals, Logic, depth):
         newPosPlayer = Logic.fastUpdate(posPlayer, posBox, action)
         newPosBox = nextBoxArr[idx]
         # Use an empty dictionary for caching (or pass a shared one if you wish)
-        _, _, score, explored_dict = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth, explored_dict)
-        action_scores.append((action, score))
+        _, bestSolution, score, explored_dict = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth, explored_dict)
+        action_scores.append((action, score, bestSolution))
     return action_scores
 
 def compute_target_values(action_scores):
@@ -718,7 +718,7 @@ inverBFSTP = TreePolicyNetwork()
 # ------------------------------
 # Train on a Root State
 # ------------------------------
-def train_root_state(posPlayer, posBox, posWalls, posGoals, Logic, model, depth=4, AstarSolution_sample=None):
+def train_root_state(posPlayer, posBox, posWalls, posGoals, Logic, model, depth=4, currentSolution=None):
     """
     For the current state S, evaluate each legal action, compute relative target values,
     and train the model on each (action, state) pair.
@@ -732,9 +732,8 @@ def train_root_state(posPlayer, posBox, posWalls, posGoals, Logic, model, depth=
     # For each action, build the feature vector and train the model.
     for action, score in action_scores:
         target = targets[tuple(action)]
-        # Use AstarSolution_sample (or compute one for the current state) for encoding.
-        if AstarSolution_sample is None:
-            AstarSolution_sample = Logic.aStar(posPlayer, posBox, posWalls, posGoals, PriorityQueue, heuristic, cost)
-        state_feature = encode_state_action(posPlayer, posBox, posWalls, posGoals, action, AstarSolution_sample)
+        if currentSolution == None:
+            currentSolution = Logic.aStar(posPlayer, posBox, posWalls, posGoals, PriorityQueue, heuristic, cost)
+        state_feature = encode_state_action(posPlayer, posBox, posWalls, posGoals, action, currentSolution)
         loss = model.train_on(state_feature, target)
         print(f"Trained on action {action} with target {target:.3f}, loss = {loss:.4f}")
