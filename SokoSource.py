@@ -649,32 +649,76 @@ def breadthFirstSearch_TPTrain(grid, Logic, model):
 
     return True
 
+def evaluate_solution(solution):
+    """
+    Evaluate a solution (list of one-hot encoded actions) by computing a score
+    that reflects the diversity and frequency of push actions.
+    
+    Here we assume each action is encoded as:
+        [dx, dy, one_hot_vector, one_hot_vector_with_push_info]
+    For example:
+        [-1, 0, [1,0,0,0,0], [1,0,0,0,1]]
+    In this example, the fourth element is a one-hot vector whose last entry (index -1)
+    is 1 if the action is a push.
+    
+    This function:
+      - Counts the number of push actions.
+      - Adds a bonus for diverse push directions (based on dx, dy).
+      
+    Returns a numerical score.
+    """
+    push_count = 0
+    push_directions = set()
+    
+    # Loop over each action in the solution
+    for action in solution:
+        # We assume the fourth element of each action contains push info.
+        # If the last value of that vector is 1, we treat it as a push.
+        push_info = action[3]
+        if push_info[-1] == 1:
+            push_count += 1
+            # Use the (dx, dy) as the push direction.
+            direction = (action[0], action[1])
+            push_directions.add(direction)
+            
+    # Compute a score: here we combine the total push count and a bonus for diversity.
+    diversity_bonus = 0.5 * len(push_directions)
+    score = push_count + diversity_bonus
+    return score
+
 def depthLimitedSearch(posPlayer, posBox, posWalls, posGoals, Logic, depth, exploredSet):
     """
-    Phase 2: Depth-Limited Search (DLS) up to depth 4
-    - Explores inverse moves to find difficult positions
-    - Stores only the hardest found states
+    Performs a depth-limited search (up to a specified depth) that returns the state and
+    corresponding solution from A* (obtained via Logic.AstarSolve) for the branch
+    that has the highest evaluation score.
+    
+    Instead of just comparing the solution lengths, we use evaluate_solution() to consider
+    the frequency and diversity of push actions.
+    
+    The exploredSet dictionary is used to cache state evaluations.
     """
-
+    # Base case: at depth 0, evaluate the current state via A*
     if depth == 0:
-        # Get solution using A* from this state
-        shortestSolution = Logic.Astar(posPlayer, posBox, posGoals, posWalls, PriorityQueue, heuristic, cost)
-        exploredSet[(posPlayer, posBox)] = (shortestSolution, len(shortestSolution))
+        shortestSolution = Logic.AstarSolve(posPlayer, posBox, posWalls, posGoals)
+        # For state encoding (for training), here we simply concatenate player position and flattened box positions.
+        state_feature = np.array(list(posPlayer) + list(np.array(posBox).flatten()))
+        # Cache the evaluated branch with its score
+        exploredSet[(posPlayer, posBox)] = (shortestSolution, evaluate_solution(shortestSolution))
         return (posPlayer, posBox), shortestSolution
 
-    # Get all legal inverse moves
-    legal_inverts = Logic.legalInverts(posPlayer, posBox, posWalls, posGoals)
-
+    legal_inverts, nextBoxArrangements = Logic.legalInverts(posPlayer, posBox, posWalls, posGoals)
     bestState, bestSolution = None, []
+    bestScore = -float('inf')
     
-    for action, newBoxConfig in legal_inverts:
+    # Explore each possible inverse move
+    for idx, action in enumerate(legal_inverts):
         newPosPlayer, newPosBox = Logic.fastUpdate(posPlayer, posBox, action)
-
-        # Recursively search up to depth 4
-        state, solution = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth - 1)
-
-        # Keep track of the hardest state (longest shortest path)
-        if len(solution) > len(bestSolution):
+        # Recursively search deeper (depth-1)
+        state, solution = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth - 1, exploredSet)
+        currentScore = evaluate_solution(solution)
+        # Select the branch with the highest evaluation score
+        if currentScore > bestScore:
+            bestScore = currentScore
             bestState, bestSolution = state, solution
 
     return bestState, bestSolution
