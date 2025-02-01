@@ -527,19 +527,180 @@ out = 1
 """
 
 
-class TreePolicyNetwork(nn.Module):
+# ------------------------------
+# Custom Evaluation Function
+# ------------------------------
+def evaluate_solution(solution):
+    """
+    Evaluates a solution (list of one-hot encoded actions) by computing a score that
+    reflects, for example, the frequency and diversity of push actions.
+    
+    For instance, we assume that each action is encoded as:
+    
+      [dx, dy, one_hot_vector, one_hot_vector_with_push_info]
+    
+    and that in the push-info vector, the last element is 1 when the action is a push.
+    This function counts the number of pushes and adds a bonus for diversity of push directions.
+    (Adjust the scoring as needed.)
+    """
+    push_count = 0
+    push_directions = set()
+    
+    for action in solution:
+        # Assume the 4th element holds push info (one-hot vector) and the last value is 1 for a push.
+        push_info = action[3]
+        if push_info[-1] == 1:
+            push_count += 1
+            # Record the push direction (dx, dy)
+            push_directions.add((action[0], action[1]))
+    
+    diversity_bonus = 0.5 * len(push_directions)
+    score = push_count + diversity_bonus
+    return score
+
+# ------------------------------
+# Depth-Limited Search
+# ------------------------------
+def depthLimitedSearch(posPlayer, posBox, posWalls, posGoals, Logic, depth, exploredSet):
+    """
+    Recursively explores from the given state (posPlayer, posBox) up to a maximum depth.
+    At depth zero, it obtains a solution from A* (via Logic.AstarSolve) and returns that.
+    
+    Instead of simply returning the solution length, we use evaluate_solution() to compute
+    a branch score.
+    
+    The exploredSet is a cache of states to avoid re-computation.
+    """
+    if depth == 0:
+        solution = Logic.AstarSolve(posPlayer, posBox, posWalls, posGoals)
+        # Cache the state evaluation (here, we simply use a simple feature vector)
+        state_feature = np.array(list(posPlayer) + list(np.array(posBox).flatten()))
+        exploredSet[(posPlayer, posBox)] = (solution, evaluate_solution(solution))
+        return (posPlayer, posBox), solution
+
+    legal_inverts, _ = Logic.legalInverts(posPlayer, posBox, posWalls, posGoals)
+    bestState, bestSolution = None, None
+    bestScore = -float('inf')
+    
+    for action in legal_inverts:
+        newPosPlayer, newPosBox = Logic.fastUpdate(posPlayer, posBox, action)
+        # Recursively search deeper.
+        state, solution = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth - 1, exploredSet)
+        currentScore = evaluate_solution(solution)
+        if currentScore > bestScore:
+            bestScore = currentScore
+            bestState, bestSolution = state, solution
+
+    return bestState, bestSolution
+
+# ------------------------------
+# Evaluate All Root Actions
+# ------------------------------
+def evaluate_root_actions(posPlayer, posBox, posWalls, posGoals, Logic, depth):
+    """
+    For the current state S (given by posPlayer, posBox) with legal actions,
+    evaluate each action by performing a depth-limited search from the resulting state.
+    Returns a list of tuples: (action, branch_score).
+    """
+    legal_inverts, _ = Logic.legalInverts(posPlayer, posBox, posWalls, posGoals)
+    action_scores = []
+    for action in legal_inverts:
+        newPosPlayer, newPosBox = Logic.fastUpdate(posPlayer, posBox, action)
+        # Use an empty dictionary for caching (or pass a shared one if you wish)
+        _, solution = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth, exploredSet={})
+        score = evaluate_solution(solution)
+        action_scores.append((action, score))
+    return action_scores
+
+def compute_target_values(action_scores):
+    """
+    Given a list of (action, branch_score) tuples for the current state,
+    compute normalized target values for each action.
+    The best action gets a target of +1, the worst gets -1, and others are scaled accordingly.
+    """
+    scores = [score for (_, score) in action_scores]
+    max_score = max(scores)
+    min_score = min(scores)
+    targets = {}
+    for action, score in action_scores:
+        if max_score == min_score:
+            target = 0.0
+        else:
+            target = (score - min_score) / (max_score - min_score) * 2 - 1
+        targets[tuple(action)] = target
+    return targets
+
+# ------------------------------
+# Feature Encoding Function
+# ------------------------------
+def encode_state_action(posPlayer, posBox, posWalls, posGoals, action, AstarSolution):
+    """
+    Encodes the state (a 5x5 window around posPlayer for boxes, walls, and goals)
+    along with the action and a summary of the A* solution (one-hot encoded) into
+    a fixed-length feature vector.
+    
+    This example simply concatenates flattened channels; adjust as needed.
+    """
+    # For simplicity, we assume that the channels for boxes, walls, and goals are each lists.
+    boxesChannel = []
+    wallsChannel = []
+    goalsChannel = []
+    
+    for item in posBox:
+        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
+            boxesChannel.append(1)
+        else:
+            boxesChannel.append(0)
+            
+    for item in posWalls:
+        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
+            wallsChannel.append(1)
+        else:
+            wallsChannel.append(0)
+            
+    for item in posGoals:
+        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
+            goalsChannel.append(1)
+        else:
+            goalsChannel.append(0)
+    
+    # Convert to tensors.
+    boxesChannel = torch.tensor(boxesChannel, dtype=torch.float32)
+    wallsChannel = torch.tensor(wallsChannel, dtype=torch.float32)
+    goalsChannel = torch.tensor(goalsChannel, dtype=torch.float32)
+    action_tensor = torch.tensor(action, dtype=torch.float32)
+    Astar_tensor = torch.tensor(AstarSolution, dtype=torch.float32)
+    
+    # Concatenate all channels into one feature vector.
+    modelInput = torch.cat((
+        boxesChannel.flatten(),
+        wallsChannel.flatten(),
+        goalsChannel.flatten(),
+        action_tensor.flatten(),
+        Astar_tensor.flatten()
+    ))
+    
+    # For this example, assume the desired fixed-length is 95.
+    if modelInput.numel() < 95:
+        pad = torch.zeros(95 - modelInput.numel())
+        modelInput = torch.cat((modelInput, pad))
+    elif modelInput.numel() > 95:
+        modelInput = modelInput[:95]
+        
+    return modelInput
+
+# ------------------------------
+# TreePolicyNetwork (Model)
+# ------------------------------
+class TreePolicyNetwork(nn.Module): 
     def __init__(self, in_dim=95, hid_dim=50, out_dim=1, num_hidden_layers=2, lr=0.001):
         super(TreePolicyNetwork, self).__init__()
-
-        layers = [nn.Linear(in_dim, hid_dim), nn.ReLU()]  # Input layer
-        for _ in range(num_hidden_layers):  # Hidden layers
+        layers = [nn.Linear(in_dim, hid_dim), nn.ReLU()]
+        for _ in range(num_hidden_layers):
             layers.append(nn.Linear(hid_dim, hid_dim))
             layers.append(nn.ReLU())
-        layers.append(nn.Linear(hid_dim, out_dim))  # Output layer
-
+        layers.append(nn.Linear(hid_dim, out_dim))
         self.model = nn.Sequential(*layers)
-
-        # Initialize optimizer once
         self.optimizer = optim.Adam(self.parameters(), lr=lr)
         self.loss_fn = nn.MSELoss()
 
@@ -547,178 +708,43 @@ class TreePolicyNetwork(nn.Module):
         return self.model(x)
 
     def train_on(self, state, difficulty):
-        """
-        Trains the network on a single state with a given difficulty label (-1 to 1).
-        """
         self.optimizer.zero_grad()
-
-        # Convert state and difficulty to tensors (adding batch dimension)
         state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
         target_tensor = torch.tensor([difficulty], dtype=torch.float32).unsqueeze(0)
-
         output = self.forward(state_tensor)
         loss = self.loss_fn(output, target_tensor)
         loss.backward()
         self.optimizer.step()
-
-        return loss.item()  # Return loss for monitoring
+        return loss.item()
 
     def predict(self, state):
-        """
-        Predicts the difficulty score for a given state.
-        """
         with torch.no_grad():
             state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
             return self.forward(state_tensor).item()
-        
+
+# Global instance of the tree policy network for evaluation/training.
 inverBFSTP = TreePolicyNetwork()
 
-def ActionStateEval(action, posPlayer, posBox, posWalls, posGoals, AstarSolution, model):
+# ------------------------------
+# Train on a Root State
+# ------------------------------
+def train_root_state(posPlayer, posBox, posWalls, posGoals, Logic, model, depth=4, AstarSolution_sample=None):
     """
-    Encodes the features from the state and evaluates the action using the model.
-    Features are taken from a 5x5 window around the player for boxes, walls, goals;
-    the action (assumed to be one-hot encoded), and the first few steps of the A* solution.
+    For the current state S, evaluate each legal action, compute relative target values,
+    and train the model on each (action, state) pair.
+    
+    AstarSolution_sample can be provided (e.g. the A* solution from S) to include in the feature encoding.
     """
-    boxesChannel = []
-    wallsChannel = []
-    goalsChannel = []
-    posBox = list(posBox)
-    posWalls = list(posWalls)
-    posGoals = list(posGoals)
-
-    # Use a 5x5 window centered on posPlayer.
-    for item in posBox:
-        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
-            boxesChannel.append(1)
-        else:
-            boxesChannel.append(0)
-    for item in posWalls:
-        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
-            wallsChannel.append(1)
-        else:
-            wallsChannel.append(0)
-    for item in posGoals:
-        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
-            goalsChannel.append(1)
-        else:
-            goalsChannel.append(0)
-    # Convert channels to tensors
-    boxesChannel = torch.tensor(boxesChannel, dtype=torch.float32)
-    wallsChannel = torch.tensor(wallsChannel, dtype=torch.float32)
-    goalsChannel = torch.tensor(goalsChannel, dtype=torch.float32)
-    action_tensor = torch.tensor(action, dtype=torch.float32)
-    Astar_tensor = torch.tensor(AstarSolution, dtype=torch.float32)
+    # Evaluate all legal actions from S.
+    action_scores = evaluate_root_actions(posPlayer, posBox, posWalls, posGoals, Logic, depth)
+    targets = compute_target_values(action_scores)
     
-    # Concatenate channels to form the model input.
-    modelInput = torch.cat((boxesChannel.flatten(),
-                            wallsChannel.flatten(),
-                            goalsChannel.flatten(),
-                            action_tensor.flatten(),
-                            Astar_tensor.flatten()))
-    return model.predict(modelInput)
-
-def breadthFirstSearch_TPTrain(grid, Logic, model):
-    """
-    Phase 1: Collect training data from states that have multiple move options.
-    Moves the player until multiple legal inversions are available, then performs
-    a depth-limited search (max depth 4) to identify difficult states.
-    """
-    # Get initial box/player positions
-    startBox = Logic.PosOfBoxes(grid)
-    startPlayer = Logic.PosOfPlayer(grid)
-    posWalls = Logic.PosOfWalls(grid)
-    
-    # Dictionary to store best paths from each state
-    exploredSet = {}
-
-    # Move player to a position where multiple moves are possible
-    stop, startBox, startPlayer = Logic.MoveUntilMultipleOptions(startPlayer, startBox, startBox, posWalls)
-    if stop:
-        return False  # No training possible
-
-    # Collect training data via depth-limited search
-    bestPath, bestSolution = depthLimitedSearch(startPlayer, startBox, posWalls, startBox, Logic, 4, exploredSet)
-
-    # Normalize values (-1 worst, +1 best)
-    best_length = len(bestSolution)
-    worst_length = min(len(sol) for _, sol in exploredSet.values())
-    
-    for state, (_, solution) in exploredSet.items():
-        difficulty = (len(solution) - worst_length) / (best_length - worst_length) * 2 - 1  # Scale from -1 to +1
-        model.train_on(state, difficulty)
-
-    return True
-
-def evaluate_solution(solution):
-    """
-    Evaluate a solution (list of one-hot encoded actions) by computing a score
-    that reflects the diversity and frequency of push actions.
-    
-    Here we assume each action is encoded as:
-        [dx, dy, one_hot_vector, one_hot_vector_with_push_info]
-    For example:
-        [-1, 0, [1,0,0,0,0], [1,0,0,0,1]]
-    In this example, the fourth element is a one-hot vector whose last entry (index -1)
-    is 1 if the action is a push.
-    
-    This function:
-      - Counts the number of push actions.
-      - Adds a bonus for diverse push directions (based on dx, dy).
-      
-    Returns a numerical score.
-    """
-    push_count = 0
-    push_directions = set()
-    
-    # Loop over each action in the solution
-    for action in solution:
-        # We assume the fourth element of each action contains push info.
-        # If the last value of that vector is 1, we treat it as a push.
-        push_info = action[3]
-        if push_info[-1] == 1:
-            push_count += 1
-            # Use the (dx, dy) as the push direction.
-            direction = (action[0], action[1])
-            push_directions.add(direction)
-            
-    # Compute a score: here we combine the total push count and a bonus for diversity.
-    diversity_bonus = 0.5 * len(push_directions)
-    score = push_count + diversity_bonus
-    return score
-
-def depthLimitedSearch(posPlayer, posBox, posWalls, posGoals, Logic, depth, exploredSet):
-    """
-    Performs a depth-limited search (up to a specified depth) that returns the state and
-    corresponding solution from A* (obtained via Logic.AstarSolve) for the branch
-    that has the highest evaluation score.
-    
-    Instead of just comparing the solution lengths, we use evaluate_solution() to consider
-    the frequency and diversity of push actions.
-    
-    The exploredSet dictionary is used to cache state evaluations.
-    """
-    # Base case: at depth 0, evaluate the current state via A*
-    if depth == 0:
-        shortestSolution = Logic.AstarSolve(posPlayer, posBox, posWalls, posGoals)
-        # For state encoding (for training), here we simply concatenate player position and flattened box positions.
-        state_feature = np.array(list(posPlayer) + list(np.array(posBox).flatten()))
-        # Cache the evaluated branch with its score
-        exploredSet[(posPlayer, posBox)] = (shortestSolution, evaluate_solution(shortestSolution))
-        return (posPlayer, posBox), shortestSolution
-
-    legal_inverts, nextBoxArrangements = Logic.legalInverts(posPlayer, posBox, posWalls, posGoals)
-    bestState, bestSolution = None, []
-    bestScore = -float('inf')
-    
-    # Explore each possible inverse move
-    for idx, action in enumerate(legal_inverts):
-        newPosPlayer, newPosBox = Logic.fastUpdate(posPlayer, posBox, action)
-        # Recursively search deeper (depth-1)
-        state, solution = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth - 1, exploredSet)
-        currentScore = evaluate_solution(solution)
-        # Select the branch with the highest evaluation score
-        if currentScore > bestScore:
-            bestScore = currentScore
-            bestState, bestSolution = state, solution
-
-    return bestState, bestSolution
+    # For each action, build the feature vector and train the model.
+    for action, score in action_scores:
+        target = targets[tuple(action)]
+        # Use AstarSolution_sample (or compute one for the current state) for encoding.
+        if AstarSolution_sample is None:
+            AstarSolution_sample = Logic.AstarSolve(posPlayer, posBox, posWalls, posGoals)
+        state_feature = encode_state_action(posPlayer, posBox, posWalls, posGoals, action, AstarSolution_sample)
+        loss = model.train_on(state_feature, target)
+        print(f"Trained on action {action} with target {target:.3f}, loss = {loss:.4f}")
