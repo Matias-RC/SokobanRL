@@ -8,7 +8,7 @@ ACTION_MAP = {
     3: (0, 1)    # 'd' (RIGHT)
 }
 
-class Logic():
+class master():
     def __init__(self):
         pass
     def update_environment(self, grid, action):
@@ -97,7 +97,7 @@ class Logic():
     def isLegalAction(self, action, posPlayer, posBox, posWalls):
         """Check if the given action is legal"""
         xPlayer, yPlayer = posPlayer
-        if action[-1].isupper(): # the move was a push
+        if action[-1][-1] == 1: # the move was a push
             x1, y1 = xPlayer + 2 * action[0], yPlayer + 2 * action[1]
         else:
             x1, y1 = xPlayer + action[0], yPlayer + action[1]
@@ -105,7 +105,10 @@ class Logic():
 
     def legalActions(self, posPlayer, posBox, posWalls):
         """Return all legal actions for the agent in the current game state"""
-        allActions = [[-1,0,'u','U'],[1,0,'d','D'],[0,-1,'l','L'],[0,1,'r','R']]
+        allActions = [[-1,0,[1,0,0,0,0],[1,0,0,0,1]],
+                      [0,-1,[0,1,0,0,0],[0,1,0,0,1]],
+                      [1,0,[0,0,1,0,0],[0,0,1,0,1]],
+                      [0,1,[0,0,0,1,0],[0,0,0,1,1]]]
         xPlayer, yPlayer = posPlayer
         legalActions = []
         for action in allActions:
@@ -123,7 +126,7 @@ class Logic():
         xPlayer, yPlayer = posPlayer # the previous position of player
         newPosPlayer = [xPlayer + action[0], yPlayer + action[1]] # the current position of player
         posBox = [list(x) for x in posBox]
-        if action[-1].isupper(): # if pushing, update the position of box
+        if action[-1][-1] == 1: # if pushing, update the position of box
             posBox.remove(newPosPlayer)
             posBox.append([xPlayer + 2 * action[0], yPlayer + 2 * action[1]])
         posBox = tuple(tuple(x) for x in posBox)
@@ -282,13 +285,7 @@ class Logic():
             node_action = actions.pop()
             if self.isEndState(node[-1][1], posGoals):
                 solution = ','.join(node_action[1:]).replace(',','')
-                oneHot = []
-                for i in solution:
-                    if i == "u" or "U": oneHot.append([1,0,0,0])
-                    elif i == "l" or "L": oneHot.append([0,1,0,0])
-                    elif i == "d" or "D": oneHot.append([0,0,1,0])
-                    else: oneHot.append([0,0,0,1])
-                return oneHot
+                return solution
                 # break
             if node[-1] not in exploredSet:
                 exploredSet.add(node[-1])

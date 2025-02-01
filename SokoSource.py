@@ -349,7 +349,7 @@ def breadth_first_search(grid, Logic):
         node_action = actions.popleft()
 
         if Logic.isEndState(node[-1][1], posGoals):
-            solution = ','.join(node_action[1:]).replace(',', '')
+            solution = node_action[1:]
             print(count)
             return solution
 
@@ -386,7 +386,7 @@ def depthFirstSearch(grid, Logic):
         node_action = actions.pop()
         if Logic.isEndState(node[-1][1], posGoals):
             # print(','.join(node_action[1:]).replace(',',''))
-            solution = ','.join(node_action[1:]).replace(',','')
+            solution = node_action[1:]
             print(count)
             return solution
             # break
@@ -418,7 +418,7 @@ def cost(actions):
     A cost function
     code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
     """
-    return len([x for x in actions if x.islower()])
+    return len([x for x in actions if x[-1] == 0])
 
 def uniformCostSearch(grid, Logic):
     """
@@ -443,7 +443,7 @@ def uniformCostSearch(grid, Logic):
         node_action = actions.pop()
         if Logic.isEndState(node[-1][1], posGoals):
             # print(','.join(node_action[1:]).replace(',',''))
-            solution = ','.join(node_action[1:]).replace(',','')
+            solution = node_action[1:]
             print(count)
             return solution
             # break
@@ -482,7 +482,7 @@ def aStarSearch(grid, Logic):
         node = frontier.pop()
         node_action = actions.pop()
         if Logic.isEndState(node[-1][1], posGoals):
-            solution = ','.join(node_action[1:]).replace(',','')
+            solution = node_action[1:]
             print(count)
             return solution
             # break
@@ -497,8 +497,8 @@ def aStarSearch(grid, Logic):
                 Heuristic = heuristic(newPosPlayer, newPosBox, posGoals)
                 frontier.push(node + [(newPosPlayer, newPosBox)], Heuristic + Cost)
                 actions.push(node_action + [action[-1]], Heuristic + Cost)
-"""
-Example usage:
+
+#Example usage:
 Easygrid = np.asarray([
     [1,1,1,1,1,1,1],
     [1,0,0,3,4,0,1],
@@ -508,7 +508,7 @@ Easygrid = np.asarray([
     [1,1,1,1,1,1,1]
 ])
 print(aStarSearch(Easygrid, master()))
-"""
+
 
 """
 Predict how benefitial is a move compared to the current state and the other posible moves
@@ -573,47 +573,56 @@ class TreePolicyNetwork(nn.Module):
         
 inverBFSTP = TreePolicyNetwork()
 
-def ActionStateEval(action, posPlayer, posBox, posWalls, posGoals, AstarSolution, ibfs):
-    boxesChanel = []
-    wallsChanel = []
-    goalsChanel = []
-    posBox = list(posBox) 
+def ActionStateEval(action, posPlayer, posBox, posWalls, posGoals, AstarSolution, model):
+    """
+    Encodes the features from the state and evaluates the action using the model.
+    Features are taken from a 5x5 window around the player for boxes, walls, goals;
+    the action (assumed to be one-hot encoded), and the first few steps of the A* solution.
+    """
+    boxesChannel = []
+    wallsChannel = []
+    goalsChannel = []
+    posBox = list(posBox)
     posWalls = list(posWalls)
     posGoals = list(posGoals)
-    for i in posBox:
-        if posPlayer[0]-5 <= i[0] <= posPlayer[0]+5 and  posPlayer[1]-5 <= i[1] <= posPlayer[1]+5:
-            boxesChanel.append(1)
-        else:
-            boxesChanel.append(0)
-    for i in posWalls:
-        if posPlayer[0]-5 <= i[0] <= posPlayer[0]+5 and  posPlayer[1]-5 <= i[1] <= posPlayer[1]+5:
-            wallsChanel.append(1)
-        else:
-            wallsChanel.append(0)
-    for i in posGoals:
-        if posPlayer[0]-5 <= i[0] <= posPlayer[0]+5 and  posPlayer[1]-5 <= i[1] <= posPlayer[1]+5:
-            goalsChanel.append(1)
-        else:
-            goalsChanel.append(0)
-    boxesChanel = torch.tensor(boxesChanel)
-    wallsChanel  = torch.tensor(wallsChanel)
-    goalsChanel = torch.tensor(goalsChanel)
 
-    #To Do - check waht dtype the action is  put in, here I assume that is one hot encoding alredy.
-
-    action = torch.tensor(action)
-    AstarSolution =  torch.tensor(AstarSolution)
-    modelInput = torch.stack((boxesChanel,wallsChanel,goalsChanel,action,AstarSolution))
-    return ibfs(modelInput)
+    # Use a 5x5 window centered on posPlayer.
+    for item in posBox:
+        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
+            boxesChannel.append(1)
+        else:
+            boxesChannel.append(0)
+    for item in posWalls:
+        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
+            wallsChannel.append(1)
+        else:
+            wallsChannel.append(0)
+    for item in posGoals:
+        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
+            goalsChannel.append(1)
+        else:
+            goalsChannel.append(0)
+    # Convert channels to tensors
+    boxesChannel = torch.tensor(boxesChannel, dtype=torch.float32)
+    wallsChannel = torch.tensor(wallsChannel, dtype=torch.float32)
+    goalsChannel = torch.tensor(goalsChannel, dtype=torch.float32)
+    action_tensor = torch.tensor(action, dtype=torch.float32)
+    Astar_tensor = torch.tensor(AstarSolution, dtype=torch.float32)
+    
+    # Concatenate channels to form the model input.
+    modelInput = torch.cat((boxesChannel.flatten(),
+                            wallsChannel.flatten(),
+                            goalsChannel.flatten(),
+                            action_tensor.flatten(),
+                            Astar_tensor.flatten()))
+    return model.predict(modelInput)
 
 def breadthFirstSearch_TPTrain(grid, Logic, model):
     """
-    Phase 1: Initial BFS to collect training data
-    - Finds valid initial states with multiple move options
-    - Explores moves up to depth 4, finding hardest states
-    - Uses ActionStateEval to evaluate moves
+    Phase 1: Collect training data from states that have multiple move options.
+    Moves the player until multiple legal inversions are available, then performs
+    a depth-limited search (max depth 4) to identify difficult states.
     """
-
     # Get initial box/player positions
     startBox = Logic.PosOfBoxes(grid)
     startPlayer = Logic.PosOfPlayer(grid)
