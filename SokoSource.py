@@ -527,44 +527,30 @@ out = 1
 """
 
 
-# ------------------------------
-# Custom Evaluation Function
-# ------------------------------
 def evaluate_solution(solution):
     """
-    Evaluates a solution (list of one-hot encoded actions) by computing a score that
-    reflects, for example, the frequency and diversity of push actions.
-    
-    For instance, we assume that each action is encoded as:
-    
-      [dx, dy, one_hot_vector, one_hot_vector_with_push_info]
-    
-    and that in the push-info vector, the last element is 1 when the action is a push.
-    This function counts the number of pushes and adds a bonus for diversity of push directions.
-    (Adjust the scoring as needed.)
+        'The box lines metric is more interesting. It counts how many
+        times the player pushes a box, but any number of pushes of
+        the same box in the same direction only count as a single box
+        line'
+    - Joshua Taylor and Ian Parberry
     """
-    push_count = 0
-    push_directions = set()
+    box_lines = 0
     
-    for action in solution:
+    for idx, action in enumerate(solution):
         # Assume the 4th element holds push info (one-hot vector) and the last value is 1 for a push.
-        push_info = action[3]
-        if push_info[-1] == 1:
-            push_count += 1
-            # Record the push direction (dx, dy)
-            push_directions.add((action[0], action[1]))
-    
-    diversity_bonus = 0.5 * len(push_directions)
-    score = push_count + diversity_bonus
-    return score
+        push_info = action[-1]
+        if idx == 0 and push_info[-1] == 1:
+            box_lines += 1
+        elif push_info[-1] == 1 and action != solution[idx-1]:
+            box_lines += 1
+    return box_lines
 
-# ------------------------------
-# Depth-Limited Search
-# ------------------------------
+
 def depthLimitedSearch(posPlayer, posBox, posWalls, posGoals, Logic, depth, exploredSet):
     """
     Recursively explores from the given state (posPlayer, posBox) up to a maximum depth.
-    At depth zero, it obtains a solution from A* (via Logic.AstarSolve) and returns that.
+    At depth zero, it obtains a solution from A* (via Logic.aStar) and returns that.
     
     Instead of simply returning the solution length, we use evaluate_solution() to compute
     a branch score.
@@ -572,26 +558,29 @@ def depthLimitedSearch(posPlayer, posBox, posWalls, posGoals, Logic, depth, expl
     The exploredSet is a cache of states to avoid re-computation.
     """
     if depth == 0:
-        solution = Logic.AstarSolve(posPlayer, posBox, posWalls, posGoals)
-        # Cache the state evaluation (here, we simply use a simple feature vector)
-        state_feature = np.array(list(posPlayer) + list(np.array(posBox).flatten()))
-        exploredSet[(posPlayer, posBox)] = (solution, evaluate_solution(solution))
-        return (posPlayer, posBox), solution
+        if (posPlayer, posBox) in exploredSet:
+            solution, ev = exploredSet[(posPlayer, posBox)]
+            return exploredSet, (posPlayer, posBox), (solution, ev)
+        else:
+            solution = Logic.aStar(posPlayer, posBox, posWalls, posGoals, PriorityQueue, heuristic, cost)
+            exploredSet[(posPlayer, posBox)] = (solution, evaluate_solution(solution))
+            return exploredSet, (posPlayer, posBox), (solution, evaluate_solution(solution))
 
-    legal_inverts, _ = Logic.legalInverts(posPlayer, posBox, posWalls, posGoals)
+    legal_inverts, nextBoxArr = Logic.legalInverts(posPlayer, posBox, posWalls, posGoals)
     bestState, bestSolution = None, None
     bestScore = -float('inf')
     
-    for action in legal_inverts:
-        newPosPlayer, newPosBox = Logic.fastUpdate(posPlayer, posBox, action)
+    for idx, action in enumerate(legal_inverts):
+        newPosPlayer = Logic.fastUpdate(posPlayer, posBox, action)
+        newPosBox = nextBoxArr[idx]
         # Recursively search deeper.
-        state, solution = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth - 1, exploredSet)
-        currentScore = evaluate_solution(solution)
+        exploredSet, state, bundle = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth - 1, exploredSet)
+        currentScore = bundle[1]
         if currentScore > bestScore:
             bestScore = currentScore
             bestState, bestSolution = state, solution
 
-    return bestState, bestSolution
+    return bestState, bestSolution, bestScore
 
 # ------------------------------
 # Evaluate All Root Actions
@@ -744,7 +733,7 @@ def train_root_state(posPlayer, posBox, posWalls, posGoals, Logic, model, depth=
         target = targets[tuple(action)]
         # Use AstarSolution_sample (or compute one for the current state) for encoding.
         if AstarSolution_sample is None:
-            AstarSolution_sample = Logic.AstarSolve(posPlayer, posBox, posWalls, posGoals)
+            AstarSolution_sample = Logic.aStar(posPlayer, posBox, posWalls, posGoals, PriorityQueue, heuristic, cost)
         state_feature = encode_state_action(posPlayer, posBox, posWalls, posGoals, action, AstarSolution_sample)
         loss = model.train_on(state_feature, target)
         print(f"Trained on action {action} with target {target:.3f}, loss = {loss:.4f}")
