@@ -580,7 +580,7 @@ def depthLimitedSearch(posPlayer, posBox, posWalls, posGoals, Logic, depth, expl
             bestScore = currentScore
             bestState, bestSolution = state, solution
 
-    return bestState, bestSolution, bestScore
+    return bestState, bestSolution, bestScore, exploredSet
 
 # ------------------------------
 # Evaluate All Root Actions
@@ -591,13 +591,14 @@ def evaluate_root_actions(posPlayer, posBox, posWalls, posGoals, Logic, depth):
     evaluate each action by performing a depth-limited search from the resulting state.
     Returns a list of tuples: (action, branch_score).
     """
-    legal_inverts, _ = Logic.legalInverts(posPlayer, posBox, posWalls, posGoals)
+    legal_inverts, nextBoxArr = Logic.legalInverts(posPlayer, posBox, posWalls, posGoals)
     action_scores = []
-    for action in legal_inverts:
-        newPosPlayer, newPosBox = Logic.fastUpdate(posPlayer, posBox, action)
+    explored_dict = {}
+    for idx, action in enumerate(legal_inverts):
+        newPosPlayer = Logic.fastUpdate(posPlayer, posBox, action)
+        newPosBox = nextBoxArr[idx]
         # Use an empty dictionary for caching (or pass a shared one if you wish)
-        _, solution = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth, exploredSet={})
-        score = evaluate_solution(solution)
+        _, _, score, explored_dict = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth, explored_dict)
         action_scores.append((action, score))
     return action_scores
 

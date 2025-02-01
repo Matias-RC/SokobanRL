@@ -268,7 +268,7 @@ class master():
             posBox = NewposBox
             iter_count += 1
         return True, posBox, posPlayer
-    def aStar(self, beginPlayer, beginBox, posGoals, posWalls, PriorityQueue, heuristic, cost):
+    def aStar(self, beginPlayer, beginBox, posWalls, posGoals, PriorityQueue, heuristic, cost):
         start_state = (beginPlayer, beginBox)
         frontier = PriorityQueue()
         frontier.push([start_state], heuristic(beginPlayer, beginBox, posGoals))
