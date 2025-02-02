@@ -100,8 +100,8 @@ class master():
     def PosOfGoals(self, grid):
         return tuple(tuple(x) for x in np.argwhere((grid == 4) | (grid == 5) | (grid == 6)))
 
-    def isEndState(self, posBox, posGoals):
-        return sorted(posBox) == sorted(posGoals)
+    def isEndState(self, posBox):
+        return sorted(posBox) == sorted(self.posGoals)
     
     def isLegalAction(self, action, posPlayer, posBox):
         """Check if the given action is legal"""
@@ -112,7 +112,7 @@ class master():
             x1, y1 = xPlayer + action[0], yPlayer + action[1]
         return (x1, y1) not in posBox + self.posWalls
 
-    def legalActions(self, posPlayer, posBox, posWalls):
+    def legalActions(self, posPlayer, posBox):
         """Return all legal actions for the agent in the current game state"""
         allActions = [[-1,0,[1,0,0,0,0],[1,0,0,0,1]],
                       [0,-1,[0,1,0,0,0],[0,1,0,0,1]],
@@ -126,7 +126,7 @@ class master():
                 action.pop(2) # drop the little letter
             else:
                 action.pop(3) # drop the upper letter
-            if self.isLegalAction(action, posPlayer, posBox, posWalls):
+            if self.isLegalAction(action, posPlayer, posBox, self.posWalls):
                 legalActions.append(action)
             else:
                 continue
@@ -141,7 +141,7 @@ class master():
         posBox = tuple(tuple(x) for x in posBox)
         newPosPlayer = tuple(newPosPlayer)
         return newPosPlayer, posBox
-    def isFailed(self, posBox, posGoals, posWalls):
+    def isFailed(self, posBox):
         """This function used to observe if the state is potentially failed, then prune the search"""
         rotatePattern = [[0,1,2,3,4,5,6,7,8],
                         [2,5,8,1,4,7,0,3,6],
@@ -154,17 +154,17 @@ class master():
         allPattern = rotatePattern + flipPattern
 
         for box in posBox:
-            if box not in posGoals:
+            if box not in self.posGoals:
                 board = [(box[0] - 1, box[1] - 1), (box[0] - 1, box[1]), (box[0] - 1, box[1] + 1),
                         (box[0], box[1] - 1), (box[0], box[1]), (box[0], box[1] + 1),
                         (box[0] + 1, box[1] - 1), (box[0] + 1, box[1]), (box[0] + 1, box[1] + 1)]
                 for pattern in allPattern:
                     newBoard = [board[i] for i in pattern]
-                    if newBoard[1] in posWalls and newBoard[5] in posWalls: return True
-                    elif newBoard[1] in posBox and newBoard[2] in posWalls and newBoard[5] in posWalls: return True
-                    elif newBoard[1] in posBox and newBoard[2] in posWalls and newBoard[5] in posBox: return True
+                    if newBoard[1] in self.posWalls and newBoard[5] in self.posWalls: return True
+                    elif newBoard[1] in posBox and newBoard[2] in self.posWalls and newBoard[5] in self.posWalls: return True
+                    elif newBoard[1] in posBox and newBoard[2] in self.posWalls and newBoard[5] in posBox: return True
                     elif newBoard[1] in posBox and newBoard[2] in posBox and newBoard[5] in posBox: return True
-                    elif newBoard[1] in posBox and newBoard[6] in posBox and newBoard[2] in posWalls and newBoard[3] in posWalls and newBoard[8] in posWalls: return True
+                    elif newBoard[1] in posBox and newBoard[6] in posBox and newBoard[2] in self.posWalls and newBoard[3] in self.posWalls and newBoard[8] in self.posWalls: return True
         return False
     
     """
@@ -227,11 +227,11 @@ class master():
     """
     Fast Inverse logic
     """
-    def isLegalInversion(self, action, posPlayer, posBox, posWalls,):
+    def isLegalInversion(self, action, posPlayer, posBox):
         xPlayer, yPlayer = posPlayer
         x1, y1 = xPlayer - action[0], yPlayer - action[1]
-        return (x1, y1) not in posBox + posWalls
-    def legalInverts(self, posPlayer, posBox, posWalls, posGoals):
+        return (x1, y1) not in posBox + self.posWalls
+    def legalInverts(self, posPlayer, posBox):
         allActions = [[(-1,0),[1,0,0,0]],
                       [(0,-1),[0,1,0,0]],
                       [(1,0),[0,0,1,0]],
@@ -251,7 +251,7 @@ class master():
             # Convert back to tuple
             temp_boxes = tuple(temp_boxes)
 
-            if self.isLegalInversion(action[0], posPlayer, posBox, posWalls) and not self.isEndState(temp_boxes, posGoals):
+            if self.isLegalInversion(action[0], posPlayer, posBox) and not self.isEndState(temp_boxes):
                 legalActions.append(action)
                 nextBoxArrengements.append(temp_boxes)
                 
@@ -260,7 +260,7 @@ class master():
         xPlayer, yPlayer = posPlayer # the previous position of player
         newPosPlayer = (xPlayer - action[0], yPlayer - action[1]) # the current position of player
         return newPosPlayer
-    def MoveUntilMultipleOptions(self, posPlayer, posBox, posGoals, posWalls):
+    def MoveUntilMultipleOptions(self, posPlayer, posBox):
         """
         Moves the player (and boxes if needed) until multiple legal inversion actions are available.
         This is a simple iterative approach that stops when more than one inversion is legal.
@@ -270,7 +270,7 @@ class master():
         max_iter = 50  # prevent infinite loops
         iter_count = 0
         while iter_count < max_iter:
-            legal_inverts, NewposBox = self.legalInverts(posPlayer, posBox, posWalls, posGoals)
+            legal_inverts, NewposBox = self.legalInverts(posPlayer, posBox)
             if len(legal_inverts) > 1:
                 return False, posBox, posPlayer
             # If only one move is available, take it.
