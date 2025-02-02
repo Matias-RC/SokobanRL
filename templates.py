@@ -131,3 +131,41 @@ templates = [template1, template2, template3, template4, template5, template6, t
 processed_templates = process_templates(templates)
 with open("templates/templates.pkl", "wb") as f:
     pickle.dump(processed_templates, f)
+
+
+# Templates for theoretical macro action development
+
+tma1 = np.matrix([
+    [1,1,1,1,1,1],
+    [1,0,0,0,4,1],
+    [1,0,3,1,1,1],
+    [1,1,0,1,1,1]
+])
+tma2 = np.matrix([
+    [1,1,1,1,1,1],
+    [1,1,0,0,0,1],
+    [1,0,4,0,0,1],
+    [1,0,3,3,0,1],
+    [1,1,1,4,1,1]
+    [0,0,0,0,0,0]
+])
+tma3 = np.matrix([
+    [0,0,0],
+    [0,3,4],
+    [0,0,0]
+])
+tma4 = np.matrix([
+    [0,0,4],
+    [0,3,0],
+    [0,0,0]
+])
+tma5 = np.matrix([
+    [1,1,1,1,1,1,1,1],
+    [1,1,4,0,0,0,1,1],
+    [1,1,4,0,3,3,0,0],
+    [1,4,0,0,0,5,0,1],
+    [1,0,0,3,1,1,0,1],
+    [1,0,0,0,1,1,0,1],
+    [1,1,1,0,3,4,0,1],
+    [1,1,1,1,1,1,1,1]
+])
