@@ -399,5 +399,6 @@ class master():
                 for all legalActions:
                     leafs.append(FastInvert(leafPosPlayer, action), nextBoxArrengement)
             depth-1
+            asd
 
         """
