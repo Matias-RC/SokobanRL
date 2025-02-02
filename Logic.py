@@ -232,16 +232,13 @@ class master():
         x1, y1 = xPlayer - action[0], yPlayer - action[1]
         return (x1, y1) not in posBox + self.posWalls
     def legalInverts(self, posPlayer, posBox):
-        allActions = [[(-1,0),[1,0,0,0]],
-                      [(0,-1),[0,1,0,0]],
-                      [(1,0),[0,0,1,0]],
-                      [(0,1),[0,0,0,1]]]
+        allActions = [(-1,0), (0,-1), (1,0), (0,1)]
         xPlayer, yPlayer = posPlayer
         legalActions = []
         nextBoxArrengements = []
 
         for action in allActions:
-            x1, y1 = xPlayer + action[0][1], yPlayer + action[0][1]
+            x1, y1 = xPlayer + action[0], yPlayer + action[1]
 
             # Convert tuple to list for modification
             temp_boxes = list(posBox)  
@@ -365,46 +362,36 @@ class master():
         self.solution_cache[state_key] = (solution, length, lines)
         
         return length + lines * 0.5
+    
+    def DepthAndBreadthLimitedSearch(self, posPlayer, posBox, max_depth, max_breadth):
+        """
+        Psudo Code:
+        SolutionCache = dictionary #contains state linked to solution to avoid re computation
+        leafs = ((posPlayer, posBox))
+        while depth > 0
+        if current breadth < max_breadth
+            old_leafs = leafs
+            leafs = ()
+            -for i in old_leafs:
+            -   -legalActions, nextBoxArrengements = (e.g. a_1=(-1,0), a_2, ...), [((2,0), (2,1)...), (),...] = 
+                    legalInverts(self, posPlayer, posBox) 
+                for all legalActions:
+                    leafs.append(FastInvert(leafPosPlayer, action), nextBoxArrengement)
+            depth-1
+        if current breadth < or = max_breadth:
+            scores = []
+            for i in leafs:
+                solution = aStar(i)
+                scores.append(state_heuristic(solution))
+            probs = GenerateProbDistributionForLeafs(scores) #Higher probs for higher scores
+            prune by selecting probabilistically a fourth of the leafs (if non divisible take less)
+            old_leafs = pruned
+            leafs = ()
+            -for i in old_leafs:
+            -   -legalActions, nextBoxArrengements = (e.g. a_1=(-1,0), a_2, ...), [((2,0), (2,1)...), (),...] = 
+                    legalInverts(self, posPlayer, posBox) 
+                for all legalActions:
+                    leafs.append(FastInvert(leafPosPlayer, action), nextBoxArrengement)
+            depth-1
 
-    def StochasticLelagInvertions(self, posPlayer, posBox):
-        all_actions = [
-            ((-1,0), [1,0,0,0,0]),  # up
-            ((0,-1), [0,1,0,0,0]),  # left
-            ((1,0), [0,0,1,0,0]),   # down
-            ((0,1), [0,0,0,1,0])    # right
-        ]
-        
-        scored_actions = []
-        
-        for action, encoding in all_actions:
-            # Calculate inverse position
-            new_player = (posPlayer[0] + action[0], posPlayer[1] + action[1])
-            
-            if not self.isLegalInversion(action, posPlayer, posBox, self.posWalls):
-                continue
-                
-            # Calculate new box positions (pull back)
-            new_boxes = [b for b in posBox if b != new_player]
-            if encoding[-1] == 1:  # Was a push action
-                new_boxes.append(posPlayer)
-                
-            # Score using heuristic
-            score = self.state_heuristic(new_player, tuple(sorted(new_boxes)), self.posGoals)
-            
-            scored_actions.append((
-                -score,  # Negative because higher score = worse state
-                (new_player, tuple(sorted(new_boxes))),
-                (action, encoding)
-            ))
-        
-        # Sort by worst states first (using negative score)
-        scored_actions.sort(key=lambda x: x[0])
-        
-        # Non-deterministic selection: choose randomly from top N
-        top_candidates = scored_actions[:self.non_determinism_factor]
-        if not top_candidates:
-            return [], []
-            
-        selected = random.choice(top_candidates)
-        
-        return [selected[2]], [selected[1][1]]
+        """
