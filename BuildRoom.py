@@ -9,4 +9,6 @@ with open("templates/templates.pkl", "rb") as f:
 
 
 # Print the generated level
-print(source.BuildRoom(20, 13, templates))
+room = source.BuildRoom(20, 13, templates)
+room = source.FillWithGoalBoxes(room, 4, seed=None)
+print(room)
