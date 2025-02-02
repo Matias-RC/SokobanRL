@@ -363,42 +363,75 @@ class master():
         
         return length + lines * 0.5
     
-    def DepthAndBreadthLimitedSearch(self, posPlayer, posBox, max_depth, max_breadth):
+    # --- Companion function: Generate a probability distribution over leaf scores ---
+    @staticmethod
+    def GenerateProbDistributionForLeafs(scores):
         """
-        Psudo Code:
-        SolutionCache = dictionary #contains state linked to solution to avoid re computation
-        leafs = ((posPlayer, posBox))
-        while depth > 0
-        if current breadth < max_breadth
-            old_leafs = leafs
-            leafs = ()
-            -for i in old_leafs:
-            -   -legalActions, nextBoxArrengements = (e.g. a_1=(-1,0), a_2, ...), [((2,0), (2,1)...), (),...] = 
-                    legalInverts(self, posPlayer, posBox) 
-                for all legalActions:
-                    if state is cached
-                        pass
-                    posPlayer = FastInvert(leafPosPlayer, action)
-                    leafs.append(posPlayer, nextBoxArrengement)
-                    solution = aStar(posPlayer, nextBoxArr)
-                    SolutionCache <--- store the state solution pairs
-            depth-1
-        if current breadth < or = max_breadth:
-            scores = []
-            for i in leafs:
-                solution = aStar(i)
-                scores.append(state_heuristic(solution))
-                SolutionCache <--- store the state solution pairs
-            probs = GenerateProbDistributionForLeafs(scores) #Higher probs for higher scores
-            prune by selecting probabilistically a fourth of the leafs (if non divisible take less)
-            old_leafs = pruned
-            leafs = ()
-            -for i in old_leafs:
-            -   -legalActions, nextBoxArrengements = (e.g. a_1=(-1,0), a_2, ...), [((2,0), (2,1)...), (),...] = 
-                    legalInverts(self, posPlayer, posBox) 
-                for all legalActions:
-                    leafs.append(FastInvert(leafPosPlayer, action), nextBoxArrengement)
-            depth-1
-            asd
-
+        Given a list of scores (where a lower score is better), returns a list of indices
+        representing the selected subset of leaves (approximately one fourth of the total).
+        The selection is probabilistic with better (i.e. lower) scores getting higher probability.
         """
+        n = len(scores)
+        if n == 0:
+            return []
+        k = max(1, n // 4)  # select at least one leaf
+        epsilon = 1e-6
+        # Use inverse cost (lower cost gets higher weight)
+        weights = [1.0 / (s + epsilon) for s in scores]
+        total = sum(weights)
+        probs = [w / total for w in weights]
+        # Sample indices (allowing duplicates) then remove duplicates.
+        selected_indices = random.choices(range(n), weights=probs, k=k)
+        return list(set(selected_indices))
+    
+    # --- The Depth and Breadth Limited Search using inversion moves ---
+    def DepthAndBreadthLimitedSearch(self, posPlayer, posBox, max_depth, max_breadth, PriorityQueue):
+        """
+        Performs a search that alternates between full expansion (when the breadth is small)
+        and probabilistic pruning (when the breadth is large). It expands inversion moves up
+        to max_depth levels. At the end, it returns the state (player and box positions) with the
+        best (lowest) heuristic value, along with its cached solution.
+        """
+        # Start with the initial state as the only leaf.
+        leafs = [(posPlayer, posBox)]
+        depth = max_depth
+        while depth > 0:
+            # Expand without pruning if the number of leafs is small.
+            if len(leafs) < max_breadth:
+                new_leafs = []
+                for state in leafs:
+                    current_player, current_box = state
+                    legal_inverts, next_box_arrangements = self.legalInverts(current_player, current_box)
+                    for i, action in enumerate(legal_inverts):
+                        new_player = self.FastInvert(current_player, action)
+                        new_box = next_box_arrangements[i]
+                        state_key = (new_player, tuple(sorted(new_box)))
+                        if state_key not in self.solution_cache:
+                            sol = self.aStar(new_player, new_box, PriorityQueue(), self.heuristic, self.cost)
+                            self.solution_cache[state_key] = sol
+                        new_leafs.append((new_player, new_box))
+                leafs = new_leafs
+                depth -= 1
+            else:
+                # When breadth is high, compute heuristic scores and prune a portion of the leaves.
+                scores = []
+                for state in leafs:
+                    player, box = state
+                    h_val = self.state_heuristic(player, box, PriorityQueue())
+                    scores.append(h_val)
+                selected_indices = self.GenerateProbDistributionForLeafs(scores)
+                pruned_leafs = [leafs[i] for i in selected_indices]
+                new_leafs = []
+                for state in pruned_leafs:
+                    current_player, current_box = state
+                    legal_inverts, next_box_arrangements = self.legalInverts(current_player, current_box)
+                    for i, action in enumerate(legal_inverts):
+                        new_player = self.FastInvert(current_player, action)
+                        new_box = next_box_arrangements[i]
+                        state_key = (new_player, tuple(sorted(new_box)))
+                        if state_key not in self.solution_cache:
+                            sol = self.aStar(new_player, new_box, PriorityQueue(), self.heuristic, self.cost)
+                            self.solution_cache[state_key] = sol
+                        new_leafs.append((new_player, new_box))
+                leafs = new_leafs
+                depth -= 1
