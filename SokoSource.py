@@ -515,3 +515,24 @@ Easygrid = np.asarray([
 print(aStarSearch(Easygrid, master()))
 """
 
+def create_environment(board_shape, posWalls, posGoals, key):
+
+    board = np.zeros(board_shape, dtype=int)
+
+    for r, c in posWalls:
+        board[r, c] = 1
+    for r, c in posGoals:
+        board[r, c] = 4
+    player_pos, box_positions = key
+    for r, c in box_positions:
+        if board[r, c] == 4:
+            board[r, c] = 5
+        else:
+            board[r, c] = 3
+    pr, pc = player_pos
+    if board[pr, pc] == 4:
+        board[pr, pc] = 6
+    else:
+        board[pr, pc] = 2
+        
+    return board
