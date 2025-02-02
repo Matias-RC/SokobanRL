@@ -281,13 +281,13 @@ class master():
             posBox = NewposBox
             iter_count += 1
         return True, posBox, posPlayer
-    def aStar(self, beginPlayer, beginBox, posWalls, posGoals, PriorityQueue, heuristic, cost):
+    def aStar(self, beginPlayer, beginBox, PriorityQueue, heuristic, cost):
         start_state = (beginPlayer, beginBox)
         frontier = PriorityQueue()
-        frontier.push([start_state], heuristic(beginPlayer, beginBox, posGoals))
+        frontier.push([start_state], heuristic(beginPlayer, beginBox, self.posGoals))
         exploredSet = set()
         actions = PriorityQueue()
-        actions.push([0], heuristic(beginPlayer, start_state[1], posGoals))
+        actions.push([0], heuristic(beginPlayer, start_state[1], self.posGoals))
         count = 0
         while frontier:
             # count = count+1
@@ -296,24 +296,24 @@ class master():
                 return 'x'
             node = frontier.pop()
             node_action = actions.pop()
-            if self.isEndState(node[-1][1], posGoals):
+            if self.isEndState(node[-1][1], self.posGoals):
                 solution = node_action[1:]
                 return solution
                 # break
             if node[-1] not in exploredSet:
                 exploredSet.add(node[-1])
                 Cost = cost(node_action[1:])
-                for action in self.legalActions(node[-1][0], node[-1][1], posWalls):
+                for action in self.legalActions(node[-1][0], node[-1][1]):
                     newPosPlayer, newPosBox = self.fastUpdate(node[-1][0], node[-1][1], action)
-                    if self.isFailed(newPosBox, posGoals, posWalls):
+                    if self.isFailed(newPosBox):
                         continue
                     count = count + 1
-                    Heuristic = heuristic(newPosPlayer, newPosBox, posGoals)
+                    Heuristic = heuristic(newPosPlayer, newPosBox, self.posGoals)
                     frontier.push(node + [(newPosPlayer, newPosBox)], Heuristic + Cost)
                     actions.push(node_action + [action[-1]], Heuristic + Cost)
 
 
-    def calculate_box_lines(self, solution):
+    def calculate_box_lines(self, solution, player_pos, box_pos):
         """Improved with proper action parsing"""
         if not solution or solution == 'x':
             return 0
@@ -346,7 +346,7 @@ class master():
 
         return box_lines
 
-    def state_heuristic(self, player_pos, box_pos, posGoals, PriorityQueue):
+    def state_heuristic(self, player_pos, box_pos, PriorityQueue):
         """Combined heuristic using cached A* solution properties"""
         state_key = (player_pos, tuple(sorted(box_pos)))
         
@@ -355,7 +355,7 @@ class master():
             return length + lines * 0.5  # Weight box lines metric
         
         # Compute and cache if not exists
-        solution = self.aStar(player_pos, box_pos, self.posWalls, posGoals, 
+        solution = self.aStar(player_pos, box_pos, self.posWalls, self.posGoals, 
                             PriorityQueue, self.heuristic, self.cost)
         if solution == 'x':
             return float('inf')  # Unsolvable
@@ -366,7 +366,7 @@ class master():
         
         return length + lines * 0.5
 
-    def legalInverts(self, posPlayer, posBox, posWalls, posGoals):
+    def StochasticLelagInvertions(self, posPlayer, posBox):
         all_actions = [
             ((-1,0), [1,0,0,0,0]),  # up
             ((0,-1), [0,1,0,0,0]),  # left
@@ -380,7 +380,7 @@ class master():
             # Calculate inverse position
             new_player = (posPlayer[0] + action[0], posPlayer[1] + action[1])
             
-            if not self.isLegalInversion(action, posPlayer, posBox, posWalls):
+            if not self.isLegalInversion(action, posPlayer, posBox, self.posWalls):
                 continue
                 
             # Calculate new box positions (pull back)
@@ -389,7 +389,7 @@ class master():
                 new_boxes.append(posPlayer)
                 
             # Score using heuristic
-            score = self.state_heuristic(new_player, tuple(sorted(new_boxes)), posGoals)
+            score = self.state_heuristic(new_player, tuple(sorted(new_boxes)), self.posGoals)
             
             scored_actions.append((
                 -score,  # Negative because higher score = worse state
@@ -414,8 +414,7 @@ class master():
             return self.solution_cache.get((posPlayer, tuple(sorted(posBox))), (None, 0, 0))
             
         # Get inverse actions using improved heuristic
-        legal_actions, new_box_states = self.legalInverts(posPlayer, posBox, 
-                                                        self.posWalls, self.posGoals)
+        legal_actions, new_box_states = self.StochasticLelagInvertions(posPlayer, posBox)
                                                         
         best_solution = None
         best_score = float('inf')
