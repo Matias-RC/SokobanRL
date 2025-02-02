@@ -9,6 +9,8 @@ with open("templates/templates.pkl", "rb") as f:
 
 
 # Print the generated level
-room = source.BuildRoom(20, 13, templates)
-room = source.FillWithGoalBoxes(room, 4, seed=None)
+room = source.BuildRoom(8, 6, templates)
+room = np.pad(room, pad_width=1, mode='constant', constant_values=1)
+room = source.FillWithGoalBoxes(room, 2, seed=None)
+room = source.PlacePlayer(room)
 print(room)

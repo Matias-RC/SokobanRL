@@ -161,8 +161,12 @@ def PlacePlayer(grid, seed=None):
     goalBoxes = np.argwhere(grid == 5)
     for i, j in goalBoxes:
         for di, dj in [(-1, 0),(1, 0), (0, -1),(0, 1)]:
-            if grid[i+di,j+dj] == 0 and grid[i+di*2,j+dj*2] == 0:
-                posibleEndStates.append((i+di,j+dj))
+            try:
+                if grid[i+di,j+dj] == 0 and grid[i+di*2,j+dj*2] == 0:
+                    posibleEndStates.append((i+di,j+dj))
+            except: 
+                pass
+                
     np.random.shuffle(posibleEndStates)
     try:
         y,x = posibleEndStates[0]
