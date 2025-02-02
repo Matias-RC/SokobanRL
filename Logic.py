@@ -376,13 +376,19 @@ class master():
             -   -legalActions, nextBoxArrengements = (e.g. a_1=(-1,0), a_2, ...), [((2,0), (2,1)...), (),...] = 
                     legalInverts(self, posPlayer, posBox) 
                 for all legalActions:
-                    leafs.append(FastInvert(leafPosPlayer, action), nextBoxArrengement)
+                    if state is cached
+                        pass
+                    posPlayer = FastInvert(leafPosPlayer, action)
+                    leafs.append(posPlayer, nextBoxArrengement)
+                    solution = aStar(posPlayer, nextBoxArr)
+                    SolutionCache <--- store the state solution pairs
             depth-1
         if current breadth < or = max_breadth:
             scores = []
             for i in leafs:
                 solution = aStar(i)
                 scores.append(state_heuristic(solution))
+                SolutionCache <--- store the state solution pairs
             probs = GenerateProbDistributionForLeafs(scores) #Higher probs for higher scores
             prune by selecting probabilistically a fourth of the leafs (if non divisible take less)
             old_leafs = pruned
