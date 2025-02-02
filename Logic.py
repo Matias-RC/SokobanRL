@@ -1,4 +1,6 @@
 import numpy as np
+from collections import defaultdict
+import random
 
 # Actions mapped to integers
 ACTION_MAP = {
@@ -9,8 +11,15 @@ ACTION_MAP = {
 }
 
 class master():
-    def __init__(self):
-        pass
+    def __init__(self, heuristic, cost):
+        self.solution_cache = {}
+        self.visited_states = defaultdict(int)
+        self.non_determinism_factor = 3
+        # Add these required attributes
+        self.posWalls = None
+        self.posGoals = None
+        self.heuristic = heuristic  # From earlier code
+        self.cost = cost  # From earlier code
     def update_environment(self, grid, action):
         """
         Updates the Sokoban environment based on the action and modifies the grid in place.
@@ -79,29 +88,29 @@ class master():
     """
         Fast Logic --- code source: https://github.com/dangarfield/sokoban-solver/blob/main/solver.py
     """
-    def PosOfPlayer(self, gameState):
-        return tuple(np.argwhere(gameState == 2)[0])
+    def PosOfPlayer(self, grid):
+        return tuple(np.argwhere(grid == 2)[0])
 
-    def PosOfBoxes(self, gameState):
-        return tuple(tuple(x) for x in np.argwhere((gameState == 3) | (gameState == 5)))
+    def PosOfBoxes(self, grid):
+        return tuple(tuple(x) for x in np.argwhere((grid == 3) | (grid == 5)))
 
-    def PosOfWalls(self, gameState):
-        return tuple(tuple(x) for x in np.argwhere(gameState == 1))
+    def PosOfWalls(self, grid):
+        return tuple(tuple(x) for x in np.argwhere(grid == 1))
 
-    def PosOfGoals(self, gameState):
-        return tuple(tuple(x) for x in np.argwhere((gameState == 4) | (gameState == 5) | (gameState == 6)))
+    def PosOfGoals(self, grid):
+        return tuple(tuple(x) for x in np.argwhere((grid == 4) | (grid == 5) | (grid == 6)))
 
     def isEndState(self, posBox, posGoals):
         return sorted(posBox) == sorted(posGoals)
     
-    def isLegalAction(self, action, posPlayer, posBox, posWalls):
+    def isLegalAction(self, action, posPlayer, posBox):
         """Check if the given action is legal"""
         xPlayer, yPlayer = posPlayer
         if action[-1][-1] == 1: # the move was a push
             x1, y1 = xPlayer + 2 * action[0], yPlayer + 2 * action[1]
         else:
             x1, y1 = xPlayer + action[0], yPlayer + action[1]
-        return (x1, y1) not in posBox + posWalls
+        return (x1, y1) not in posBox + self.posWalls
 
     def legalActions(self, posPlayer, posBox, posWalls):
         """Return all legal actions for the agent in the current game state"""
@@ -223,32 +232,33 @@ class master():
         x1, y1 = xPlayer - action[0], yPlayer - action[1]
         return (x1, y1) not in posBox + posWalls
     def legalInverts(self, posPlayer, posBox, posWalls, posGoals):
-        allActions = [[-1,0,[1,0,0,0,0],[1,0,0,0,1]],
-                      [0,-1,[0,1,0,0,0],[0,1,0,0,1]],
-                      [1,0,[0,0,1,0,0],[0,0,1,0,1]],
-                      [0,1,[0,0,0,1,0],[0,0,0,1,1]]]
+        allActions = [[(-1,0),[1,0,0,0]],
+                      [(0,-1),[0,1,0,0]],
+                      [(1,0),[0,0,1,0]],
+                      [(0,1),[0,0,0,1]]]
         xPlayer, yPlayer = posPlayer
         legalActions = []
         nextBoxArrengements = []
+
         for action in allActions:
-            x1, y1 = xPlayer + action[0][0], yPlayer + action[0][1]
+            x1, y1 = xPlayer + action[0][1], yPlayer + action[0][1]
 
             # Convert tuple to list for modification
             temp_boxes = list(posBox)  
+
             temp_boxes = [(xPlayer, yPlayer) if i == (x1, y1) else i for i in temp_boxes]
 
             # Convert back to tuple
             temp_boxes = tuple(temp_boxes)
 
             if self.isLegalInversion(action[0], posPlayer, posBox, posWalls) and not self.isEndState(temp_boxes, posGoals):
-                legalActions.append(action[1][:-1])
+                legalActions.append(action)
                 nextBoxArrengements.append(temp_boxes)
                 
-
         return tuple(tuple(x) for x in legalActions), nextBoxArrengements
     def FastInvert(self, posPlayer, action):
         xPlayer, yPlayer = posPlayer # the previous position of player
-        newPosPlayer = [xPlayer - action[0], yPlayer - action[1]] # the current position of player
+        newPosPlayer = (xPlayer - action[0], yPlayer - action[1]) # the current position of player
         return newPosPlayer
     def MoveUntilMultipleOptions(self, posPlayer, posBox, posGoals, posWalls):
         """
@@ -301,3 +311,135 @@ class master():
                     Heuristic = heuristic(newPosPlayer, newPosBox, posGoals)
                     frontier.push(node + [(newPosPlayer, newPosBox)], Heuristic + Cost)
                     actions.push(node_action + [action[-1]], Heuristic + Cost)
+
+
+    def calculate_box_lines(self, solution):
+        """Improved with proper action parsing"""
+        if not solution or solution == 'x':
+            return 0
+
+        current_dir = None
+        box_lines = 0
+
+        for action in solution:
+            # Convert numeric action to direction
+            if action == 0:  # up
+                new_dir = (-1, 0)
+            elif action == 1:  # down
+                new_dir = (1, 0)
+            elif action == 2:  # left
+                new_dir = (0, -1)
+            elif action == 3:  # right
+                new_dir = (0, 1)
+            else:
+                continue
+
+            # Check if push action
+            is_push = self._is_push_action(action, player_pos, box_pos)
+
+            if is_push:
+                if new_dir != current_dir:
+                    box_lines += 1
+                    current_dir = new_dir
+            else:
+                current_dir = None
+
+        return box_lines
+
+    def state_heuristic(self, player_pos, box_pos, posGoals, PriorityQueue):
+        """Combined heuristic using cached A* solution properties"""
+        state_key = (player_pos, tuple(sorted(box_pos)))
+        
+        if state_key in self.solution_cache:
+            solution, length, lines = self.solution_cache[state_key]
+            return length + lines * 0.5  # Weight box lines metric
+        
+        # Compute and cache if not exists
+        solution = self.aStar(player_pos, box_pos, self.posWalls, posGoals, 
+                            PriorityQueue, self.heuristic, self.cost)
+        if solution == 'x':
+            return float('inf')  # Unsolvable
+            
+        length = len(solution)
+        lines = self.calculate_box_lines(solution)
+        self.solution_cache[state_key] = (solution, length, lines)
+        
+        return length + lines * 0.5
+
+    def legalInverts(self, posPlayer, posBox, posWalls, posGoals):
+        all_actions = [
+            ((-1,0), [1,0,0,0,0]),  # up
+            ((0,-1), [0,1,0,0,0]),  # left
+            ((1,0), [0,0,1,0,0]),   # down
+            ((0,1), [0,0,0,1,0])    # right
+        ]
+        
+        scored_actions = []
+        
+        for action, encoding in all_actions:
+            # Calculate inverse position
+            new_player = (posPlayer[0] + action[0], posPlayer[1] + action[1])
+            
+            if not self.isLegalInversion(action, posPlayer, posBox, posWalls):
+                continue
+                
+            # Calculate new box positions (pull back)
+            new_boxes = [b for b in posBox if b != new_player]
+            if encoding[-1] == 1:  # Was a push action
+                new_boxes.append(posPlayer)
+                
+            # Score using heuristic
+            score = self.state_heuristic(new_player, tuple(sorted(new_boxes)), posGoals)
+            
+            scored_actions.append((
+                -score,  # Negative because higher score = worse state
+                (new_player, tuple(sorted(new_boxes))),
+                (action, encoding)
+            ))
+        
+        # Sort by worst states first (using negative score)
+        scored_actions.sort(key=lambda x: x[0])
+        
+        # Non-deterministic selection: choose randomly from top N
+        top_candidates = scored_actions[:self.non_determinism_factor]
+        if not top_candidates:
+            return [], []
+            
+        selected = random.choice(top_candidates)
+        
+        return [selected[2]], [selected[1][1]]
+
+    def depthLimitedSearch(self, posPlayer, posBox, depth, max_branches=30):
+        if depth == 0 or len(self.visited_states) >= max_branches:
+            return self.solution_cache.get((posPlayer, tuple(sorted(posBox))), (None, 0, 0))
+            
+        # Get inverse actions using improved heuristic
+        legal_actions, new_box_states = self.legalInverts(posPlayer, posBox, 
+                                                        self.posWalls, self.posGoals)
+                                                        
+        best_solution = None
+        best_score = float('inf')
+        
+        for action, new_boxes in zip(legal_actions, new_box_states):
+            if self.visited_states[(action, new_boxes)] > 2:  # Prevent loops
+                continue
+                
+            self.visited_states[(action, new_boxes)] += 1
+            
+            # Recursive search
+            solution, length, lines = self.depthLimitedSearch(action[0], new_boxes, depth-1)
+            
+            current_score = length + lines * 0.5
+            if current_score < best_score:
+                best_score = current_score
+                best_solution = solution
+                
+        return best_solution, best_score, self.calculate_box_lines(best_solution)
+
+    # Existing helper methods remain the same
+    def isLegalInversion(self, action, posPlayer, posBox, posWalls):
+        x1, y1 = posPlayer[0] + action[0], posPlayer[1] + action[1]
+        return (x1, y1) not in posBox + posWalls
+
+    def FastInvert(self, posPlayer, action):
+        return (posPlayer[0] + action[0][0], posPlayer[1] + action[0][1])

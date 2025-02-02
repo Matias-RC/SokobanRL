@@ -498,6 +498,7 @@ def aStarSearch(grid, Logic):
                 frontier.push(node + [(newPosPlayer, newPosBox)], Heuristic + Cost)
                 actions.push(node_action + [action[-1]], Heuristic + Cost)
 
+"""
 #Example usage:
 Easygrid = np.asarray([
     [1,1,1,1,1,1,1],
@@ -508,7 +509,7 @@ Easygrid = np.asarray([
     [1,1,1,1,1,1,1]
 ])
 print(aStarSearch(Easygrid, master()))
-
+"""
 
 """
 Predict how benefitial is a move compared to the current state and the other posible moves
@@ -529,22 +530,10 @@ out = 1
 
 def evaluate_solution(solution):
     """
-        'The box lines metric is more interesting. It counts how many
-        times the player pushes a box, but any number of pushes of
-        the same box in the same direction only count as a single box
-        line'
-    - Joshua Taylor and Ian Parberry
+    Uses the solution length as the metric.
+    Returns a higher score for a shorter solution.
     """
-    box_lines = 0
-    
-    for idx, action in enumerate(solution):
-        # Assume the 4th element holds push info (one-hot vector) and the last value is 1 for a push.
-        push_info = action[-1]
-        if idx == 0 and push_info[-1] == 1:
-            box_lines += 1
-        elif push_info[-1] == 1 and action != solution[idx-1]:
-            box_lines += 1
-    return box_lines
+    return -len(solution)
 
 
 def depthLimitedSearch(posPlayer, posBox, posWalls, posGoals, Logic, depth, exploredSet):
@@ -557,6 +546,7 @@ def depthLimitedSearch(posPlayer, posBox, posWalls, posGoals, Logic, depth, expl
     
     The exploredSet is a cache of states to avoid re-computation.
     """
+
     if depth == 0:
         if (posPlayer, posBox) in exploredSet:
             solution, ev = exploredSet[(posPlayer, posBox)]
@@ -565,22 +555,27 @@ def depthLimitedSearch(posPlayer, posBox, posWalls, posGoals, Logic, depth, expl
             solution = Logic.aStar(posPlayer, posBox, posWalls, posGoals, PriorityQueue, heuristic, cost)
             exploredSet[(posPlayer, posBox)] = (solution, evaluate_solution(solution))
             return exploredSet, (posPlayer, posBox), (solution, evaluate_solution(solution))
-
+    #l = [posPlayer, posBox, posWalls, posGoals]
+    #for i in l:
+        #print(i)
+        #print("---")
     legal_inverts, nextBoxArr = Logic.legalInverts(posPlayer, posBox, posWalls, posGoals)
+
     bestState, bestSolution = None, None
     bestScore = -float('inf')
     
     for idx, action in enumerate(legal_inverts):
-        newPosPlayer = Logic.fastUpdate(posPlayer, posBox, action)
+        newPosPlayer = Logic.FastInvert(posPlayer, action[0])
+
         newPosBox = nextBoxArr[idx]
         # Recursively search deeper.
         exploredSet, state, bundle = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth - 1, exploredSet)
         currentScore = bundle[1]
         if currentScore > bestScore:
             bestScore = currentScore
-            bestState, bestSolution = state, solution
+            bestState, bestSolution = state, bundle[0]
 
-    return bestState, bestSolution, bestScore, exploredSet
+    return exploredSet, bestState, (bestSolution, bestScore)
 
 # ------------------------------
 # Evaluate All Root Actions
@@ -595,11 +590,12 @@ def evaluate_root_actions(posPlayer, posBox, posWalls, posGoals, Logic, depth):
     action_scores = []
     explored_dict = {}
     for idx, action in enumerate(legal_inverts):
-        newPosPlayer = Logic.fastUpdate(posPlayer, posBox, action)
+        newPosPlayer = Logic.FastInvert(posPlayer, action[0])
+
         newPosBox = nextBoxArr[idx]
         # Use an empty dictionary for caching (or pass a shared one if you wish)
-        _, bestSolution, score, explored_dict = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth, explored_dict)
-        action_scores.append((action, score, bestSolution))
+        explored_dict, _, bundle = depthLimitedSearch(newPosPlayer, newPosBox, posWalls, posGoals, Logic, depth, explored_dict)
+        action_scores.append((action[1], bundle[1]))
     return action_scores
 
 def compute_target_values(action_scores):
@@ -636,31 +632,23 @@ def encode_state_action(posPlayer, posBox, posWalls, posGoals, action, AstarSolu
     wallsChannel = []
     goalsChannel = []
     
-    for item in posBox:
-        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
-            boxesChannel.append(1)
-        else:
-            boxesChannel.append(0)
-            
-    for item in posWalls:
-        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
-            wallsChannel.append(1)
-        else:
-            wallsChannel.append(0)
-            
-    for item in posGoals:
-        if posPlayer[0]-5 <= item[0] <= posPlayer[0]+5 and posPlayer[1]-5 <= item[1] <= posPlayer[1]+5:
-            goalsChannel.append(1)
-        else:
-            goalsChannel.append(0)
-    
+    for i in range(-2, 3): 
+        for j in range(-2, 3):   
+            current_x = posPlayer[0] + i
+            current_y = posPlayer[1] + j
+            currentPos = (current_x, current_y)
+
+            boxesChannel.append(1 if currentPos in posBox else 0)
+            wallsChannel.append(1 if currentPos in posWalls else 0)
+            goalsChannel.append(1 if currentPos in posGoals else 0)
+
     # Convert to tensors.
     boxesChannel = torch.tensor(boxesChannel, dtype=torch.float32)
     wallsChannel = torch.tensor(wallsChannel, dtype=torch.float32)
     goalsChannel = torch.tensor(goalsChannel, dtype=torch.float32)
     action_tensor = torch.tensor(action, dtype=torch.float32)
     Astar_tensor = torch.tensor(AstarSolution, dtype=torch.float32)
-    
+
     # Concatenate all channels into one feature vector.
     modelInput = torch.cat((
         boxesChannel.flatten(),
@@ -670,13 +658,6 @@ def encode_state_action(posPlayer, posBox, posWalls, posGoals, action, AstarSolu
         Astar_tensor.flatten()
     ))
     
-    # For this example, assume the desired fixed-length is 95.
-    if modelInput.numel() < 95:
-        pad = torch.zeros(95 - modelInput.numel())
-        modelInput = torch.cat((modelInput, pad))
-    elif modelInput.numel() > 95:
-        modelInput = modelInput[:95]
-        
     return modelInput
 
 # ------------------------------
@@ -715,6 +696,19 @@ class TreePolicyNetwork(nn.Module):
 # Global instance of the tree policy network for evaluation/training.
 inverBFSTP = TreePolicyNetwork()
 
+
+
+def stackFirstSteps(input_list):
+    if len(input_list) < 5:
+        input_list.extend([[ -1 ] * 5] * (5 - len(input_list)))
+
+    first_five_sublists = input_list[:5]
+
+    flattened = [item for sublist in first_five_sublists for item in sublist]
+    stacked_tensor = torch.tensor(flattened).view(-1, 1)
+
+    return stacked_tensor
+
 # ------------------------------
 # Train on a Root State
 # ------------------------------
@@ -734,6 +728,35 @@ def train_root_state(posPlayer, posBox, posWalls, posGoals, Logic, model, depth=
         target = targets[tuple(action)]
         if currentSolution == None:
             currentSolution = Logic.aStar(posPlayer, posBox, posWalls, posGoals, PriorityQueue, heuristic, cost)
-        state_feature = encode_state_action(posPlayer, posBox, posWalls, posGoals, action, currentSolution)
-        loss = model.train_on(state_feature, target)
-        print(f"Trained on action {action} with target {target:.3f}, loss = {loss:.4f}")
+        state_feature = encode_state_action(posPlayer, posBox, posWalls, posGoals, action, stackFirstSteps(currentSolution))
+        print(target)
+        print(state_feature)
+        print(state_feature.shape)
+        #loss = model.train_on(state_feature, target)
+        #print(f"Trained on action {action} with target {target:.3f}, loss = {loss:.4f}")
+
+grid = np.array([
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 4, 1],
+    [1, 0, 0, 1, 1, 0, 1],
+    [1, 0, 3, 0, 2, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1]
+])
+def extract_positions(grid):
+    # Walls: grid == 1
+    posWalls = tuple(tuple(x) for x in np.argwhere(grid == 1))
+    # Goals: grid == 4, 5, or 6
+    posGoals = tuple(tuple(x) for x in np.argwhere(np.isin(grid, [4, 5, 6])))
+    # Boxes: grid == 3 or 5
+    posBoxes = tuple(tuple(x) for x in np.argwhere(np.isin(grid, [3, 5])))
+    # Player: grid == 2 or 6 (we assume only one player)
+    posPlayer_arr = np.argwhere(np.isin(grid, [2, 6]))
+    if len(posPlayer_arr) == 0:
+        raise ValueError("Player not found!")
+    posPlayer = tuple(posPlayer_arr[0])
+    return posPlayer, posBoxes, posWalls, posGoals
+
+posPlayer, posBoxes, posWalls, posGoals = extract_positions(grid)
+
+train_root_state(posPlayer, posBoxes, posWalls, posGoals, master(), inverBFSTP, depth=3, currentSolution=None)
