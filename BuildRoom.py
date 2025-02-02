@@ -29,7 +29,7 @@ envPosWalls = logic.PosOfWalls(room)
 logic.posGoals = envPosGoals
 logic.posWalls = envPosWalls
 
-logic.DepthAndBreadthLimitedSearch(posPlayer, posBox, 3000, 1000)
+logic.DepthAndBreadthLimitedSearch(posPlayer, posBox, 3000, 10000)
 
 cache_contents = logic.get_longest_solution_from_cache()
 print(cache_contents)

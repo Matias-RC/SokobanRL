@@ -423,7 +423,7 @@ class master():
         
         if state_key in self.solution_cache:
             solution, length, lines = self.solution_cache[state_key]
-            return length + lines * 0.5  # Weight box lines metric
+            return length*.7 + lines  # Weight box lines metric
         
         # Compute and cache if not exists
         solution = self.aStar(player_pos, box_pos, self.posWalls, self.posGoals, 
@@ -435,7 +435,7 @@ class master():
         lines = self.calculate_box_lines(solution)
         self.solution_cache[state_key] = (solution, length, lines)
         
-        return length + lines
+        return length*.7 + lines
     
     # --- Companion function: Generate a probability distribution over leaf scores ---
     @staticmethod
