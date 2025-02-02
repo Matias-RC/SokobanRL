@@ -408,37 +408,3 @@ class master():
         selected = random.choice(top_candidates)
         
         return [selected[2]], [selected[1][1]]
-
-    def depthLimitedSearch(self, posPlayer, posBox, depth, max_branches=30):
-        if depth == 0 or len(self.visited_states) >= max_branches:
-            return self.solution_cache.get((posPlayer, tuple(sorted(posBox))), (None, 0, 0))
-            
-        # Get inverse actions using improved heuristic
-        legal_actions, new_box_states = self.StochasticLelagInvertions(posPlayer, posBox)
-                                                        
-        best_solution = None
-        best_score = float('inf')
-        
-        for action, new_boxes in zip(legal_actions, new_box_states):
-            if self.visited_states[(action, new_boxes)] > 2:  # Prevent loops
-                continue
-                
-            self.visited_states[(action, new_boxes)] += 1
-            
-            # Recursive search
-            solution, length, lines = self.depthLimitedSearch(action[0], new_boxes, depth-1)
-            
-            current_score = length + lines * 0.5
-            if current_score < best_score:
-                best_score = current_score
-                best_solution = solution
-                
-        return best_solution, best_score, self.calculate_box_lines(best_solution)
-
-    # Existing helper methods remain the same
-    def isLegalInversion(self, action, posPlayer, posBox, posWalls):
-        x1, y1 = posPlayer[0] + action[0], posPlayer[1] + action[1]
-        return (x1, y1) not in posBox + posWalls
-
-    def FastInvert(self, posPlayer, action):
-        return (posPlayer[0] + action[0][0], posPlayer[1] + action[0][1])
