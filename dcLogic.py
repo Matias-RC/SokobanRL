@@ -118,5 +118,11 @@ class dreamCoder():
                     elif newBoard[1] in posBox and newBoard[2] in posBox and newBoard[5] in posBox: return True
                     elif newBoard[1] in posBox and newBoard[6] in posBox and newBoard[2] in self.posWalls and newBoard[3] in self.posWalls and newBoard[8] in self.posWalls: return True
         return False
-    def dcSolve():
+    def dcSolve(self, posPlayer, posBox, max_depth, max_breadth):
+        self.frontier = Frontier()
+        depth = max_depth
+        if self.isEndState(posBox): return False
+        while depth > 0:
+           break 
+
         pass
