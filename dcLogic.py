@@ -24,7 +24,6 @@ class Node:
 
 class Frontier:
     def __init__(self):
-        # You can choose a deque for FIFO (breadth-first) or a list/heap for other strategies.
         self.frontier = deque()
 
     def push(self, node: Node):
