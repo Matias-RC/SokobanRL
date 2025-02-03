@@ -1,17 +1,60 @@
 import numpy as np
-from collections import defaultdict
+from collections import defaultdict, deque
 import random
+from dataclasses import dataclass
+from typing import Any, Optional, List
 
 InitalLibrary = ([(-1,0)],[(1, 0)],[(0,-1)],[(0, 1)])
 
+@dataclass
+class Node:
+    state: Any
+    parent: Optional['Node'] = None
+    action: Optional[Any] = None
+
+    def trajectory(self) -> List['Node']:
+        """
+        Reconstructs the trajectory (path) from the root to this node.
+        """
+        node, path = self, []
+        while node:
+            path.append(node)
+            node = node.parent
+        return list(reversed(path))
+
+class Frontier:
+    def __init__(self):
+        # You can choose a deque for FIFO (breadth-first) or a list/heap for other strategies.
+        self.frontier = deque()
+
+    def push(self, node: Node):
+        """
+        Add a new node to the frontier.
+        """
+        self.frontier.append(node)
+
+    def pop(self) -> Node:
+        """
+        Remove and return the next node according to the removal policy.
+        For BFS, we pop from the left of the deque.
+        """
+        return self.frontier.popleft()
+
+    def is_empty(self) -> bool:
+        """
+        Check whether the frontier is empty.
+        """
+        return not self.frontier
+
 class dreamCoder():
-    def __init__(self, q, pi, L):
-        self.solution_cache = {}
+    def __init__(self, q, pi, L, frontier):
+        self.cache = {}
         self.posWalls = None
         self.posGoals = None
         self.q = q
         self.pi = pi
         self.L = L
+        self.frontier = frontier
     def PosOfPlayer(self, grid):
         return tuple(np.argwhere(grid == 2)[0])
 

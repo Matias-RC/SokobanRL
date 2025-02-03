@@ -250,19 +250,6 @@ class master():
     def inverse_update_environment(self, grid, action):
         """
         Reverses the Sokoban environment based on the action and modifies the grid in place.
-
-        Args:
-            grid (np.ndarray): A matrix representing the current environment state.
-                Legend:
-                    0: Empty space
-                    1: Wall
-                    2: Player
-                    3: Box
-                    4: Button
-                    5: Box on Button
-                    6: Player on Button
-            action (int): Action to reverse (0='w', 1='s', 2='a', 3='d').
-
         Returns:
             np.ndarray: Updated grid after the inverse action.
         """
