@@ -16,8 +16,8 @@ width = 8
 inner_room = source.BuildRoom(width,height, templates)
 room = np.ones((height + 2, width + 2), dtype=inner_room.dtype)
 room[1:-1, 1:-1] = inner_room
-room = source.FillWithGoalBoxes(room, 3, seed=None)
-room = source.PlacePlayer(room)
+room = source.FillWithGoalsThenBoxes(np.argwhere(room == 0),room, 3, seed=None)
+room = source.RandomPlacePlayer(np.argwhere(room == 0), room)
 
 print(room)
 
@@ -29,10 +29,12 @@ envPosWalls = logic.PosOfWalls(room)
 logic.posGoals = envPosGoals
 logic.posWalls = envPosWalls
 
-logic.DepthAndBreadthLimitedSearch(posPlayer, posBox, 8, 20000)
+print(logic.aStar(posPlayer, posBox))
 
-cache_contents = logic.get_longest_solution_from_cache()
-print(cache_contents)
-newRoom = source.create_environment(room.shape,envPosWalls, envPosGoals, cache_contents[0])
-print(newRoom)
-logic = master(source.heuristic,source.cost)
+#logic.DepthAndBreadthLimitedSearch(posPlayer, posBox, 8, 20000)
+
+#cache_contents = logic.get_longest_solution_from_cache()
+#print(cache_contents)
+#newRoom = source.create_environment(room.shape,envPosWalls, envPosGoals, cache_contents[0])
+#print(newRoom)
+#logic = master(source.heuristic,source.cost)

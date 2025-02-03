@@ -132,6 +132,29 @@ def FillWithGoalBoxes(grid, n, seed=None):
     
     return grid
 
+def FillWithGoalsThenBoxes(emptyPositions, grid, n,seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    placed =  0
+    np.random.shuffle(emptyPositions)
+    for i, j in emptyPositions:
+        if placed >= n:
+            break
+        if all(grid[i + di, j + dj] == 0 for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]):
+            grid[i, j] = 4
+            emptyPositions = np.argwhere(grid == 0)
+            placed += 1    
+    placed = 0
+    np.random.shuffle(emptyPositions)
+    for i, j in emptyPositions:
+        if placed >= n:
+            break
+        if all(grid[i + di, j + dj] == 0 or grid[i + di, j + dj] == 4 for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]):
+            grid[i, j] = 3
+            placed += 1  
+    return grid
+    
+
 def FillWithWalls(grid, n, seed=None):
     if seed is not None:
         np.random.seed(seed)
@@ -174,6 +197,12 @@ def PlacePlayer(grid, seed=None):
         return grid
     except:
         return False
+def RandomPlacePlayer(empty_positions, grid, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    np.random.shuffle(empty_positions)
+    grid[empty_positions[0][0],empty_positions[0][1]] = 2
+    return grid
 
 
 """
