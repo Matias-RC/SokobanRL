@@ -1,0 +1,36 @@
+Initialize library L with basic actions
+Initialize neural recognition model Q
+Initialize tree polocy π 
+
+for each iteration do
+    # Phase 1: Wake
+    for each level in TaskSet do
+        # Use neural model Q to suggest actions
+        while level not completed:
+            for s in leafs:
+                π(s) = Prob
+            Prune leafs given Probs
+            old_leafs = leafs
+            leafs = []
+            for s in old_leafs:
+                Q(s) = Probs accros legal actions in L 
+        
+        # Store the solution
+        if solution_found:
+            Solutions[lvl] = solution
+    
+    # Phase 2: Dream
+    # Refine the library by compressing successful programs
+    new_macroAction = Compress(Solutions, L)
+    L.extend(new_macroAction)
+    
+    # Phase 3: Train Recognition Model and Tree Policy
+    TrainRecognitionModel(Q, Solutions, L)
+    TrinTreePolicy(π, solutions, Q)
+
+    # Check for convergence or stopping criteria
+    if Converged(Solutions, L):
+        break
+end for
+
+return L, Q, π, Solutions
