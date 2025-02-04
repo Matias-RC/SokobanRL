@@ -6,7 +6,7 @@ class MonteCarloTreeSearch:
     def __init__(self, actions):
         self.actions = actions
 
-    def do(self, task):
+    def do(self, task): #random uniform
         done = False
         solution = None
         task_solver = Task_Solver_Interaction(task)
@@ -22,4 +22,8 @@ class MonteCarloTreeSearch:
                 solution = possible_rnd_solution
                 done = True
         
+        return solution 
+    
+    def do_with_net(self, task): #not uniform
+        solution = None        
         return solution 

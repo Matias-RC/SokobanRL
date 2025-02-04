@@ -11,9 +11,10 @@ class Agent:
 
         self.solver = MonteCarloTreeSearch(actions=self.actions)
 
-        self.abstractor = Decompiling()
-
         self.library = set(self.actions.keys())
+
+        self.abstractor = Decompiling()
+        
     
     def wake(self, session):
 
@@ -37,7 +38,12 @@ class Agent:
 
     def abstraction(self):
 
-        self.current_factors = self.abstractor.do(self.current_session)
+        self.current_factors = self.abstractor.do(
+            session=self.current_session,
+            k=1,
+            vocabulary_size=len(self.library)
+        )
+
         self.refact()
         
     def refact(self):
