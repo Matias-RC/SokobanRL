@@ -43,17 +43,15 @@ class Frontier:
         """
         Check whether the frontier is empty.
         """
-        return not self.frontier
+        return not self.frontier 
 
-class dreamCoder():
-    def __init__(self, q, pi, L, frontier):
+class Solver():
+    def __init__(self, q, L):
         self.cache = {}
         self.posWalls = None
         self.posGoals = None
         self.q = q
-        self.pi = pi
         self.L = L
-        self.frontier = frontier
     def PosOfPlayer(self, grid):
         return tuple(np.argwhere(grid == 2)[0])
 
@@ -120,18 +118,28 @@ class dreamCoder():
         return False
     def GenerateProbs():
         pass
-    def dcSolve(self, posPlayer, posBox, max_depth, max_breadth, expantionQuota):
-        self.frontier = Frontier()
-        depth = max_depth
-        if self.isEndState(posBox): return False
-        while depth > 0:
-           if len(self.frontier) < max_breadth:
-               currentPlayer, currentBox = self.frontier.pop().state
-               legals = []
-               for primitive in self.L:
-                   isLegal, newPosPlayer, newPosBox = self.LegalUpdate(primitive, currentPlayer, currentBox)
-                   if isLegal:
-                       legals.append()
-                       
+    def dcSolve(self, posPlayer, posBox, max_depth, max_breadth):
+        root = Node(state=(posPlayer, posBox), parent=None, action=None)
+        frontier = Frontier()
+        frontier.push(root)
 
-        pass
+        exploredSet = set()
+
+        while not frontier.is_empty():
+
+
+            if frontier.size() < max_breadth:
+                new_nodes = []
+                while not frontier.is_empty():
+                    node = frontier.pop()
+                    currentState = node.state
+                    if self.isEndState(currentState[1]):
+                        return node.trajectory()
+                    for action in self.L:
+                        isLegal, newPosPlayer, newPosBox = self.LegalUpdate(action, currentState[0], currentState[1])
+                        if isLegal and (newPosPlayer, newPosBox) not in exploredSet:
+                            newNode = Node(state=(newPosPlayer, newPosBox), parent=node, action=action)
+                            new_nodes.append(newNode)
+                            exploredSet.add((newPosPlayer, newPosBox))
+                for node in new_nodes:
+                    frontier.push(node)
