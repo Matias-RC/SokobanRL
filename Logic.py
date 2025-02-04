@@ -210,13 +210,14 @@ class master():
     def fastUpdate(self, posPlayer, posBox, action):
         xPlayer, yPlayer = posPlayer # the previous position of player
         newPosPlayer = [xPlayer + action[0], yPlayer + action[1]] # the current position of player
-        posBox = [list(x) for x in posBox]
+        newPosBox = [list(x) for x in posBox]
+        
         if action[-1][-1] == 1: # if pushing, update the position of box
-            posBox.remove(newPosPlayer)
-            posBox.append([xPlayer + 2 * action[0], yPlayer + 2 * action[1]])
-        posBox = tuple(tuple(x) for x in posBox)
+            newPosBox.remove(newPosPlayer)
+            newPosBox.append([xPlayer + 2 * action[0], yPlayer + 2 * action[1]])
+        newPosBox = tuple(tuple(x) for x in newPosBox)
         newPosPlayer = tuple(newPosPlayer)
-        return newPosPlayer, posBox
+        return newPosPlayer, newPosBox
     def isFailed(self, posBox):
         """This function used to observe if the state is potentially failed, then prune the search"""
         rotatePattern = [[0,1,2,3,4,5,6,7,8],

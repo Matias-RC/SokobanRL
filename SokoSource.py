@@ -374,10 +374,8 @@ def breadth_first_search(grid, Logic):
     exploredSet = set()
     count = 0
 
-    posGoals = Logic.PosOfGoals(grid)
-    posWalls = Logic.PosOfWalls(grid)
-    Logic.PosGoals = posGoals
-    Logic.PosWalls = posWalls
+    logic.posGoals = logic.PosOfGoals(Easygrid)
+    logic.posWalls = logic.PosOfWalls(Easygrid)
 
     while frontier:
         node = frontier.popleft()
@@ -387,13 +385,11 @@ def breadth_first_search(grid, Logic):
             solution = node_action[1:]
             print(count)
             return solution
-
         if node[-1] not in exploredSet:
             exploredSet.add(node[-1])
             for action in Logic.legalActions(node[-1][0], node[-1][1]):
                 count += 1
                 newPosPlayer, newPosBox = Logic.fastUpdate(node[-1][0], node[-1][1], action)
-                
                 if Logic.isFailed(newPosBox):
                     continue
                 
@@ -543,7 +539,10 @@ Easygrid = np.asarray([
     [1,0,0,3,0,4,1],
     [1,1,1,1,1,1,1]
 ])
-print(breadth_first_search(Easygrid, master(heuristic, cost)))
+logic = master(heuristic, cost)
+
+
+print(breadth_first_search(Easygrid, logic))
 
 def create_environment(board_shape, posWalls, posGoals, key):
 
