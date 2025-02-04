@@ -118,11 +118,20 @@ class dreamCoder():
                     elif newBoard[1] in posBox and newBoard[2] in posBox and newBoard[5] in posBox: return True
                     elif newBoard[1] in posBox and newBoard[6] in posBox and newBoard[2] in self.posWalls and newBoard[3] in self.posWalls and newBoard[8] in self.posWalls: return True
         return False
-    def dcSolve(self, posPlayer, posBox, max_depth, max_breadth):
+    def GenerateProbs():
+        pass
+    def dcSolve(self, posPlayer, posBox, max_depth, max_breadth, expantionQuota):
         self.frontier = Frontier()
         depth = max_depth
         if self.isEndState(posBox): return False
         while depth > 0:
-           break 
+           if len(self.frontier) < max_breadth:
+               currentPlayer, currentBox = self.frontier.pop().state
+               legals = []
+               for primitive in self.L:
+                   isLegal, newPosPlayer, newPosBox = self.LegalUpdate(primitive, currentPlayer, currentBox)
+                   if isLegal:
+                       legals.append()
+                       
 
         pass
