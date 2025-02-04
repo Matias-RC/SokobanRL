@@ -9,7 +9,6 @@ logic = master(source.heuristic,source.cost)
 with open("templates/templates.pkl", "rb") as f:
     templates = pickle.load(f)
 
-
 height = 8
 width = 8
 # Print the generated level
