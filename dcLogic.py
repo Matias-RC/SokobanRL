@@ -43,17 +43,15 @@ class Frontier:
         """
         Check whether the frontier is empty.
         """
-        return not self.frontier
+        return not self.frontier 
 
-class dreamCoder():
-    def __init__(self, q, pi, L, frontier):
+class Solver():
+    def __init__(self, q, L):
         self.cache = {}
         self.posWalls = None
         self.posGoals = None
         self.q = q
-        self.pi = pi
         self.L = L
-        self.frontier = frontier
     def PosOfPlayer(self, grid):
         return tuple(np.argwhere(grid == 2)[0])
 
@@ -118,20 +116,72 @@ class dreamCoder():
                     elif newBoard[1] in posBox and newBoard[2] in posBox and newBoard[5] in posBox: return True
                     elif newBoard[1] in posBox and newBoard[6] in posBox and newBoard[2] in self.posWalls and newBoard[3] in self.posWalls and newBoard[8] in self.posWalls: return True
         return False
-    def GenerateProbs():
-        pass
-    def dcSolve(self, posPlayer, posBox, max_depth, max_breadth, expantionQuota):
-        self.frontier = Frontier()
-        depth = max_depth
-        if self.isEndState(posBox): return False
-        while depth > 0:
-           if len(self.frontier) < max_breadth:
-               currentPlayer, currentBox = self.frontier.pop().state
-               legals = []
-               for primitive in self.L:
-                   isLegal, newPosPlayer, newPosBox = self.LegalUpdate(primitive, currentPlayer, currentBox)
-                   if isLegal:
-                       legals.append()
-                       
+    def GenerateProbs(values):
+        if not values:
+            return []
 
-        pass
+        values = np.array(values, dtype=np.float64)
+
+        exp_values = np.exp(values - np.max(values)) 
+
+        # Normalize to sum to 1
+        probabilities = exp_values / np.sum(exp_values)
+
+        return probabilities.tolist()
+    def makeBatches(nodesList, batchSize):
+        n = len(nodesList)
+        numBatches = n // batchSize
+
+        if n % batchSize != 0:
+            numBatches += 1
+
+        # Randomly shuffle indices to ensure randomness
+        indices = list(range(n))
+        random.shuffle(indices)
+
+        batches = [[] for _ in range(numBatches)]
+        for i, idx in enumerate(indices):
+            batch_index = i % numBatches 
+            batches[batch_index].append(nodesList[idx])
+        return batches
+    
+    def dcSolve(self, posPlayer, posBox, max_depth, max_breadth, batchSize, drawSize):
+        root = Node(state=(posPlayer, posBox), parent=None, action=None)
+        frontier = Frontier()
+        frontier.push(root)
+
+        exploredSet = set()
+
+        while not frontier.is_empty():
+
+
+            if frontier.size() < max_breadth:
+                new_nodes = []
+                while not frontier.is_empty():
+                    node = frontier.pop()
+                    currentState = node.state
+                    if self.isEndState(currentState[1]):
+                        return node.trajectory()
+                    for action in self.L:
+                        isLegal, newPosPlayer, newPosBox = self.LegalUpdate(action, currentState[0], currentState[1])
+                        if isLegal and (newPosPlayer, newPosBox) not in exploredSet:
+                            newNode = Node(state=(newPosPlayer, newPosBox), parent=node, action=action)
+                            new_nodes.append(newNode)
+                            exploredSet.add((newPosPlayer, newPosBox))
+                for node in new_nodes:
+                    frontier.push(node)
+            else:
+                nodesList = list(frontier.frontier)
+                batches = self.makeBatches(nodesList, batchSize)
+                selected_nodes = []
+
+                for batch in batches:
+                    states_batch = [node.state for node in batch]
+                    q_values = self.q.predict(states_batch)
+                    probs = self.GenerateProbs(q_values)
+                    selected_indices = random.choices(range(len(batch)), weights=probs, k=drawSize)
+                    for idx in selected_indices:
+                        selected_nodes.append(batch[idx])
+                frontier.frontier.clear()
+                for node in selected_nodes:
+                    frontier.push(node)
