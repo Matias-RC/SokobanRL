@@ -1,14 +1,31 @@
 from data.task import Task
 import numpy as np
+from collections import defaultdict, deque
+import random
+from dataclasses import dataclass
+from typing import Any, Optional, List
+
+@dataclass
+class Node:
+    state: Any
+    parent: Optional['Node'] = None
+    action: Optional[Any] = None
+
+    def trajectory(self) -> List['Node']:
+        """
+        Reconstructs the trajectory (path) from the root to this node.
+        """
+        node, path = self, []
+        while node:
+            path.append(node)
+            node = node.parent
+        return list(reversed(path))
 
 class SokobanManager:
     def __init__(self):
         self.posWalls = None
         self.posGoals = None
 
-    def dataManager():
-        pass
-    
     def PosOfPlayer(self, grid):
         return tuple(np.argwhere(grid == 2)[0]) # idplayer = 2
 
@@ -21,17 +38,17 @@ class SokobanManager:
     def PosOfGoals(self, grid):
         return tuple(tuple(x) for x in np.argwhere((grid == 4) | (grid == 5) | (grid == 6)))
 
-    def isEndState(self, posBox):
-        return sorted(posBox) == sorted(self.posGoals)    
+    def isEndState(self,node):
+        return sorted(node.state[1]) == sorted(self.posGoals)    
     
     def isLegalAction(self, action, posPlayer, posBoxes):
         dx, dy = action[0]
         factor = 2 if action[1] else 1
         target = (posPlayer[0] + factor * dx, posPlayer[1] + factor * dy)
-        return target not in self.walls and target not in posBoxes
+        return target not in self.posWalls and target not in posBoxes
 
 
-    def LegalUpdate(self,macro,game_data): #posPlayer, posBoxes
+    def LegalUpdate(self,macro,game_data,node): #posPlayer, posBoxes
         player, posBoxes = game_data
         boxes = set(posBoxes)
 
@@ -46,7 +63,8 @@ class SokobanManager:
                 boxes.remove(player)
                 boxes.add((player[0] + dx, player[1] + dy))
 
-        return True, (player, tuple(boxes))
+        new_node = Node(state=(player,tuple(boxes)),parent=node,action=macro)
+        return True, new_node
     
     def isFailed(self, posBox):
         """This function used to observe if the state is potentially failed, then prune the search"""
@@ -73,3 +91,9 @@ class SokobanManager:
                     elif newBoard[1] in posBox and newBoard[2] in posBox and newBoard[5] in posBox: return True
                     elif newBoard[1] in posBox and newBoard[6] in posBox and newBoard[2] in self.posWalls and newBoard[3] in self.posWalls and newBoard[8] in self.posWalls: return True
         return False
+    
+    def initializer(self,initial_state):
+        self.posWalls = self.PosOfWalls(initial_state)
+        self.posGoals = self.PosOfGoals(initial_state)
+        node = Node(state=(self.PosOfPlayer(initial_state), self.PosOfBoxes(initial_state)))
+        return node

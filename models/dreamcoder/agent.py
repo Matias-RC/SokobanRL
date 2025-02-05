@@ -2,16 +2,21 @@ from solvers.tree import MonteCarloTreeSearch
 from abstractors.bayesian import Decompiling
 
 class Agent:
-    def __init__(self):
+    def __init__(self,actions,manager,q_net,batchSize,drawSize):
 
-        self.actions = {"left":3,"right":2,"up":1,"down":0}
+        self.actions = actions
 
         self.current_session = None    
         self.current_factors = None
+        
+        self.q_net=q_net
 
-        self.solver = MonteCarloTreeSearch(actions=self.actions)
+        self.solver=MonteCarloTreeSearch(library_actions=self.actions,
+                                         manager=manager,
+                                         batchSize=batchSize,
+                                         drawSize=drawSize)
 
-        self.library = set(self.actions.keys())
+        self.library = self.actions
 
         self.abstractor = Decompiling()
         
@@ -26,6 +31,12 @@ class Agent:
 
             task.add(solution)
 
+            if solution is not None:
+                print("Solution:")
+                print(solution.trajectory)
+            else:
+                print("X")
+
 
     def sleep(self):
 
@@ -34,7 +45,7 @@ class Agent:
 
     def solve(self, task):
 
-        return self.solver.do(task)
+        return self.solver.do(task,self.q_net)
 
     def abstraction(self):
 
