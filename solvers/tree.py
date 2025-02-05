@@ -1,29 +1,17 @@
 import random
 from data.task_solver_interaction import Task_Solver_Interaction
-
+from managers.sokoban_manager import SokobanManager
+from dcLogic import Solver #solver for sokoban
 
 class MonteCarloTreeSearch:
-    def __init__(self, actions):
-        self.actions = actions
+    def __init__(self, library_actions):
+        self.manager = None
+        self.library_actions = library_actions
 
-    def do(self, task): #random uniform
-        done = False
-        solution = None
-        task_solver = Task_Solver_Interaction(task)
+    def tree_search(self, task, manager_dictionary,  ):
+        self.manager = manager_dictionary[task.key]
+        game_data = task.initial_state,
         
-        while not done:
-            possible_rnd_solution = [] #possible solution
-            while not task_solver.is_correct_final_state() or not task_solver.is_fail_state():
-                next_action = random.choice(self.actions)
-                task_solver.update_position(next_action)  #update state
-                possible_rnd_solution.append(next_action)
-            
-            if task_solver.is_correct_final_state():
-                solution = possible_rnd_solution
-                done = True
-        
-        return solution 
+        for action in self.library_actions:
+            bool_condition, game_data = self.manager.LegalUpdate(macro=action,game_data=game_data)
     
-    def do_with_net(self, task): #not uniform
-        solution = None        
-        return solution 
