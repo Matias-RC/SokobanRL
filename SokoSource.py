@@ -533,6 +533,7 @@ def aStarSearch(grid, Logic):
 #Example usage:
 Easygrid = np.asarray([
     [1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,1],
     [1,0,0,3,4,0,1],
     [1,2,0,3,0,4,1],
     [1,0,1,1,1,1,1],
