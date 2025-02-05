@@ -33,7 +33,7 @@ class Agent:
 
             if solution is not None:
                 print("Solution:")
-                print(solution.trajectory)
+                print(solution.trajectory())
             else:
                 print("X")
 

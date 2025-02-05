@@ -16,9 +16,11 @@ class Node:
         Reconstructs the trajectory (path) from the root to this node.
         """
         node, path = self, []
+
         while node:
-            path.append(node)
+            path.append(node.action)
             node = node.parent
+            
         return list(reversed(path))
 
 class SokobanManager:
