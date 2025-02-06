@@ -374,8 +374,8 @@ def breadth_first_search(grid, Logic):
     exploredSet = set()
     count = 0
 
-    logic.posGoals = logic.PosOfGoals(Easygrid)
-    logic.posWalls = logic.PosOfWalls(Easygrid)
+    Logic.posGoals = Logic.PosOfGoals(grid)
+    Logic.posWalls = Logic.PosOfWalls(grid)
 
     while frontier:
         node = frontier.popleft()
@@ -528,21 +528,6 @@ def aStarSearch(grid, Logic):
                 Heuristic = heuristic(newPosPlayer, newPosBox, posGoals)
                 frontier.push(node + [(newPosPlayer, newPosBox)], Heuristic + Cost)
                 actions.push(node_action + [action[-1]], Heuristic + Cost)
-
-
-#Example usage:
-Easygrid = np.asarray([
-    [1,1,1,1,1,1,1],
-    [1,0,0,3,4,0,1],
-    [1,2,0,3,0,4,1],
-    [1,0,1,1,1,1,1],
-    [1,0,0,3,0,4,1],
-    [1,1,1,1,1,1,1]
-])
-logic = master(heuristic, cost)
-
-
-print(breadth_first_search(Easygrid, logic))
 
 def create_environment(board_shape, posWalls, posGoals, key):
 

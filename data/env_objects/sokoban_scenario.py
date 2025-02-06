@@ -147,7 +147,7 @@ def Scenario(height=8,width=8):
             #room = np.ones((height + 2, width + 2), dtype=inner_room.dtype)
             #room[1:-1, 1:-1] = inner_room
             room = FillWithWalls(np.argwhere(room == 0),room, 4, seed=None)
-            room = FillWithGoalsThenBoxes(np.argwhere(room == 0),room, 2, seed=None)
+            room = FillWithGoalsThenBoxes(np.argwhere(room == 0),room, 3, seed=None)
             room = RandomPlacePlayer(np.argwhere(room == 0), room, seed=None)
             logic = master(source.heuristic, source.cost)
             posBox =  logic.PosOfBoxes(room)
