@@ -22,7 +22,13 @@ class Node:
             node = node.parent
             
         return list(reversed(path))
+    def statesList(self) -> List['Node']:
+        node, path = self, []
 
+        while node:
+            path.append(node.state)
+            node = node.parent
+        return list(reversed(path))
 class SokobanManager:
     def __init__(self):
         self.posWalls = None
