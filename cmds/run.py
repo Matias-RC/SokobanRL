@@ -17,7 +17,7 @@ actions_for_sokoban = [
     [(0, 1)]    # 'd' (RIGHT)
 ]
 scenarios = [ Scenario() for _ in range(1)] #room
-
+print(scenarios)
 session_1 = [
     Task(
         initial_state= init_state,
