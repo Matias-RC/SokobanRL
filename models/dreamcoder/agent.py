@@ -33,7 +33,10 @@ class Agent:
 
             if solution is not None:
                 print("Solution:")
-                print(solution.trajectory())
+                states  = solution.statesList()
+                for idx, action in enumerate(solution.trajectory()):
+                    print(action)
+                    print(states[idx])
             else:
                 print("X")
 

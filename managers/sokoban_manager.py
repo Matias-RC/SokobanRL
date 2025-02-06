@@ -54,25 +54,6 @@ class SokobanManager:
         factor = 2 if action[1] else 1
         target = (posPlayer[0] + factor * dx, posPlayer[1] + factor * dy)
         return target not in self.posWalls and target not in posBoxes
-
-
-    def LegalUpdate(self,macro,game_data,node): #posPlayer, posBoxes
-        player, posBoxes = game_data
-        boxes = set(posBoxes)
-
-        for dx, dy in macro:
-            nextPos = (player[0] + dx, player[1] + dy)
-            push = nextPos in boxes
-            action = ((dx, dy), push)
-            if not self.isLegalAction(action, player, boxes):
-                return False, None
-            player = nextPos
-            if push:
-                boxes.remove(player)
-                boxes.add((player[0] + dx, player[1] + dy))
-
-        new_node = Node(state=(player,tuple(boxes)),parent=node,action=macro)
-        return True, new_node
     
     def isFailed(self, posBox):
         """This function used to observe if the state is potentially failed, then prune the search"""
@@ -99,6 +80,25 @@ class SokobanManager:
                     elif newBoard[1] in posBox and newBoard[2] in posBox and newBoard[5] in posBox: return True
                     elif newBoard[1] in posBox and newBoard[6] in posBox and newBoard[2] in self.posWalls and newBoard[3] in self.posWalls and newBoard[8] in self.posWalls: return True
         return False
+
+    def LegalUpdate(self,macro,game_data,node): #posPlayer, posBoxes
+        player, posBoxes = game_data
+        boxes = set(posBoxes)
+
+        for dx, dy in macro:
+            nextPos = (player[0] + dx, player[1] + dy)
+            push = nextPos in boxes
+            action = ((dx, dy), push)
+            if not self.isLegalAction(action, player, boxes):
+                return False, None
+            player = nextPos
+            if push:
+                boxes.remove(player)
+                boxes.add((player[0] + dx, player[1] + dy))
+        posBoxes = tuple(boxes)
+        new_node = Node(state=(player,posBoxes),parent=node,action=macro)
+        condition = not self.isFailed(posBoxes)
+        return condition, new_node
     
     def initializer(self,initial_state):
         self.posWalls = self.PosOfWalls(initial_state)
