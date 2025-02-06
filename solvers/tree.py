@@ -5,7 +5,7 @@ from dcLogic import Solver #solver for sokoban
 import numpy as np
 
 class MonteCarloTreeSearch:
-    def __init__(self,library_actions,manager,batchSize, drawSize,max_depth=100,max_breadth=10000):
+    def __init__(self,library_actions,manager,batchSize, drawSize,max_depth=100,max_breadth=300000):
         self.manager = manager
         self.library_actions = library_actions
         self.frontier = []
@@ -47,8 +47,8 @@ class MonteCarloTreeSearch:
     def do(self,task,q_function):
         node = self.manager.initializer(task.initial_state)
         self.frontier.append(node)
-        
-        while len(self.frontier) >  0 and self.max_depth > 0:
+        depth = self.max_depth
+        while len(self.frontier) >  0 and depth > 0:
             if len(self.frontier) < self.max_breadth:
                 new_frontier = []
                 for node in self.frontier:
@@ -58,13 +58,13 @@ class MonteCarloTreeSearch:
                             bool_condition, new_node = self.manager.LegalUpdate(macro=action,game_data=node.state,node=node)
                             if bool_condition:
                                 if self.manager.isEndState(node=new_node):
+                                    self.frontier = []
+                                    self.seen_states = set()
                                     return new_node #solution
                                 new_frontier.append(new_node)
                         
-
-
                 self.frontier = new_frontier
-                self.max_depth -= 1
+                depth -= 1
             else:
                 batches = self.makeBatches(self.frontier, self.batchSize)
                 selected_nodes = []

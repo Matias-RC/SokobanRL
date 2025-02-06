@@ -1,5 +1,7 @@
 from solvers.tree import MonteCarloTreeSearch
 from abstractors.bayesian import Decompiling
+from simAnnaeling import kOpt
+from data.task import Task
 
 class Agent:
     def __init__(self,actions,manager,q_net,batchSize,drawSize):
@@ -21,7 +23,7 @@ class Agent:
         self.abstractor = Decompiling()
         
     
-    def wake(self, session):
+    def wake(self, wake_manager, session: list[Task]):
 
         self.current_session = session
         
@@ -32,8 +34,10 @@ class Agent:
             task.add(solution)
 
             if solution is not None:
-                print("Solution:")
+                print("Non optimized solution:")
                 print(solution.trajectory())
+                print("Optimized Solution:")
+                print(kOpt(task.initial_state, solution, 3, self.actions, wake_manager))
             else:
                 print("X")
 
@@ -51,7 +55,7 @@ class Agent:
 
         self.current_factors = self.abstractor.do(
             session=self.current_session,
-            k=1,
+            k=2,
             vocabulary_size=len(self.library)
         )
 

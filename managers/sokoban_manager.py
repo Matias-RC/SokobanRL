@@ -21,12 +21,20 @@ class Node:
             path.append(node.action)
             node = node.parent
             
-        return list(reversed(path))
+        return list(reversed(path))[1:]
+    
     def statesList(self) -> List['Node']:
         node, path = self, []
 
         while node:
             path.append(node.state)
+            node = node.parent
+        return list(reversed(path))
+    
+    def nodesList(self) -> List['Node']:
+        node, path = self, []
+        while node:
+            path.append(node)
             node = node.parent
         return list(reversed(path))
 class SokobanManager:

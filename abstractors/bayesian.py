@@ -24,19 +24,20 @@ class Decompiling:
     def compute_whole_candidate_space(self, session: list[Task]):
         candidate_factors = []
         for task in session:
-            solution = task.solution
-            offset = 0
-            while offset + self.factor_size <= len(solution):
-                factor = solution[offset:offset+self.factor_size]
-                if factor not in candidate_factors:  # Ensure uniqueness
-                    candidate_factors.append(factor)
-                offset += 1
+            if task.is_solved:
+                solution = task.solution.trajectory()
+                offset = 0
+                while offset + self.factor_size <= len(solution):
+                    factor = solution[offset:offset+self.factor_size]
+                    if factor not in candidate_factors:  # Ensure uniqueness
+                        candidate_factors.append(factor)
+                    offset += 1
         
         return candidate_factors
 
     def do_uniform(self, session: list[Task], k=1, vocabulary_size=4):
         candidate_space = self.compute_whole_candidate_space(session)
-        programs = [task.solution for task in session]
+        programs = [task.solution.trajectory() for task in session if task.is_solved]
         weight_per_program = [(len(rho) * (vocabulary_size**len(rho)))**-1 for rho in programs]
 
         scores = []

@@ -1,10 +1,13 @@
 
 class Task:
     def __init__(self,initial_state):
-        #self.scenario = scenario
+
         self.initial_state = initial_state
+        self.is_solved = False
 
     def add(self, solution):
-        self.solution = solution
+        if solution is not None:
+            self.solution = solution
+            self.is_solved = True
 
     
