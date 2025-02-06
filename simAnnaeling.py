@@ -13,9 +13,9 @@ def kOpt(initial_state, terminalNode, k,l, manager):
     k-opt analysis involves deleting k edges from the current solution to the problem, 
     creating k sub-tours. -> combinatorial
     """
-    _ = manager.initializer(manager,initial_state)
-    statesList = terminalNode.statesList(terminalNode)
-    nodesList = terminalNode.nodesList(terminalNode)
+    _ = manager.initializer(initial_state)
+    statesList = terminalNode.statesList()
+    nodesList = terminalNode.nodesList()
     node = nodesList[0]
     idx  = 0
     while idx + k < len(nodesList):
@@ -24,7 +24,7 @@ def kOpt(initial_state, terminalNode, k,l, manager):
             new_frontier = []
             for i in frontier:
                 for action in l:
-                    bool_condition, new_node = manager.LegalUpdate(manager, action,i.state, i)
+                    bool_condition, new_node = manager.LegalUpdate(action,i.state, i)
                     if bool_condition:
                         new_frontier.append(new_node)
             frontier = new_frontier

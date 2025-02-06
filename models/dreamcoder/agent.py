@@ -37,7 +37,7 @@ class Agent:
                 print("Non optimized solution:")
                 print(solution.trajectory())
                 print("Optimized Solution:")
-                print(kOpt(task.initial_state, solution, 3, self.actions, wake_manager))
+                print(kOpt(task.initial_state, solution, 3, self.actions, wake_manager).trajectory())
             else:
                 print("X")
 
