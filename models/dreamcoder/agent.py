@@ -39,7 +39,7 @@ class Agent:
                 print("generating new node")
                 new_node = kOpt(task.initial_state, solution, 5, self.actions, wake_manager)
                 print("Optimized Solution:")
-                print(len(new_node.trajectory()))
+                print(kOpt(task.initial_state, solution, 3, self.actions, wake_manager).trajectory())
             else:
                 print("X")
 
