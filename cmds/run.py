@@ -6,6 +6,7 @@ from data.task import Task
 from data.env_objects.sokoban_scenario import Scenario
 from learning.curriculum import Curriculum
 from models.dreamcoder.q_uniform import q_uniform
+from DeepQNetwork.mlp import DQN
 from managers.sokoban_manager import SokobanManager
 
 NUM_TASKS = 50
