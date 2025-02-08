@@ -15,3 +15,4 @@ This repository implements a Sokoban game using Reinforcement Learning (RL).
 - [AI driven Sokoban level generator](https://www.researchgate.net/publication/354819642_Procedural_Level_Generation_for_Sokoban_via_Deep_Learning_An_Experimental_Study)
 - [Bayesian Program Learning by Decompiling Amortized Knowledge](https://arxiv.org/abs/2306.07856)
 - [DreamCoder for RL based on lisp](https://arxiv.org/abs/2309.03651)
+-[A Novel Automated Curriculum Strategy to Solve Hard Sokoban Planning Instances](https://arxiv.org/abs/2110.00898)
