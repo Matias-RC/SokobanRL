@@ -1,5 +1,11 @@
-from managers.sokoban_manager import SokobanManager
+from managers.sokoban_manager import SokobanManager, Node
 from collections import defaultdict
+import math
+import random
+import heapq
+from typing import Callable, List, Any
+from dataclasses import dataclass
+from typing import Optional
 
 actions_for_sokoban = [
     [(-1, 0)],  # 'w' (UP)
@@ -49,5 +55,40 @@ def kOpt(initial_state, terminalNode, k,l, manager):
     posterior.parent = node
     return terminalNode
 
-def simulatedAnnaeling(trajectory):
-    pass
+def simulated_annealing_trajectory(
+    initial_solution: Node,
+    neighbor_generator: Callable[[Node], List[Node]],
+    q: Callable[[Node], float],
+        # neighbor_generator takes a current solution (Node) and returns a list of new candidate solutions.
+    T_init: float = 1000.0,
+    alpha: float = 0.95,
+    T_min: float = 1e-3,
+    max_iter: int = 1000,
+) -> Node:   
+    current = initial_solution.statesList()
+    iteration = 0
+    T = T_init
+
+    while iteration < max_iter and T > T_min:
+        neighbors = neighbor_generator(current)
+        if not neighbors:
+            break
+
+        current_quality = len(current)
+        
+        improved = [len(n.statesList()) for n in neighbors if len(n.statesList()) < current_quality]
+
+        if improved:
+            candidate = min(improved)
+            current = candidate
+        else:
+            candidates = [len(n.statesList()) for n in neighbors]
+            candidate = min(candidates)
+            delta = candidate - current_quality 
+            if random.random() < math.exp(-delta / T):
+                current = candidate
+
+        T *= alpha
+        iteration += 1
+
+    return current
