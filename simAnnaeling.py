@@ -57,44 +57,35 @@ def kOpt(initial_state, terminalNode, k,l, manager):
 
 def simulated_annealing_trajectory(
     initial_solution: Node,
-    generator: Callable[[Node], List[Node]],
+    generator: Callable[[Node, Callable[[Node], float], int], List[Node]],
     q: Callable[[Node], float],
-        # neighbor_generator takes a current solution (Node) and returns a list of new candidate solutions.
+    perceivedImprovability: Callable[[Node], float],
+    num_alternatives: int = 5,
     T_init: float = 1000.0,
     alpha: float = 0.95,
-    T_min: float = 1e-3,
-    max_iter: int = 1000,
-) -> Node:   
-    current = initial_solution.statesList()
-    iteration = 0
+    T_min: float = 1e-3
+) -> Node:
+    cache: List[Node] = [initial_solution]
+    pool: List[Node] = [initial_solution]
     T = T_init
 
-    while iteration < max_iter and T > T_min:
-        altTrajectories = generator(current, q)
-        if not altTrajectories:
-            break
+    while T > T_min and pool:
+        candidate = max(pool, key=perceivedImprovability)
+        pool.remove(candidate)
+        altTrajectories = generator(candidate, q, num_alternatives)
 
-        current_quality = len(current)
-        
-        improved = [len(t.statesList()) for t in altTrajectories if len(t.statesList()) < current_quality]
 
-        if improved:
-            candidate = min(improved)
-            current = candidate
-        else:
-            candidates = [t for t in altTrajectories]
-            candidate_length = float("inf")
-            candidate = None
-            for t in candidates:
-                if len(t.statesList()) < candidate_length:
-                    candidate_length = len(t.statesList())
-                    candidate = t
-
-            delta = candidate_length - current_quality 
-            if random.random() < math.exp(-delta / T):
-                current = candidate
-
+        for alt in altTrajectories:
+            alt_quality = len(alt.statesList())
+            candidate_quality = len(candidate.statesList())
+            if alt_quality < candidate_quality:
+                pool.append(alt)
+                break
+            else:
+                delta = alt_quality - candidate_quality
+                if random.random() < math.exp(-delta / T):
+                    pool.append(alt)
+            cache.append(alt)
         T *= alpha
-        iteration += 1
 
-    return current
+    return cache
