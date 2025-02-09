@@ -34,12 +34,7 @@ class Agent:
             task.add(solution)
 
             if solution is not None:
-                print("Non optimized solution:")
-                print(len(solution.trajectory()))
-                print("generating new node")
-                new_node = kOpt(task.initial_state, solution, 5, self.actions, wake_manager)
-                print("Optimized Solution:")
-                print(kOpt(task.initial_state, solution, 3, self.actions, wake_manager).trajectory())
+                print(solution.trajectory())
             else:
                 print("X")
 
