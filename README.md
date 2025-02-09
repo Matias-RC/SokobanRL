@@ -10,6 +10,8 @@ This repository implements a Sokoban game using Reinforcement Learning (RL).
 
 - Random levels are generated based on the procedural generation techniques outlined in the 2011 paper *"Procedural Generation of Sokoban Levels"* by Joshua Taylor and Ian Parberry. This method ensures a variety of challenging and diverse levels while maintaining playability and difficulty balance.
 
+## Branches
+- `DreamCoder` is the most up to date branch. Main is outdated
 ## Links
 - [Brute Force Sokoban level generator](https://ianparberry.com/pubs/GAMEON-NA_METH_03.pdf)
 - [AI driven Sokoban level generator](https://www.researchgate.net/publication/354819642_Procedural_Level_Generation_for_Sokoban_via_Deep_Learning_An_Experimental_Study)
