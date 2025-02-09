@@ -70,25 +70,25 @@ def simulated_annealing_trajectory(
     T = T_init
 
     while iteration < max_iter and T > T_min:
-        alts = generator(current, q)
-        if not alts:
+        altTrajectories = generator(current, q)
+        if not altTrajectories:
             break
 
         current_quality = len(current)
         
-        improved = [len(n.statesList()) for n in alts if len(n.statesList()) < current_quality]
+        improved = [len(t.statesList()) for t in altTrajectories if len(t.statesList()) < current_quality]
 
         if improved:
             candidate = min(improved)
             current = candidate
         else:
-            candidates = [n for n in alts]
+            candidates = [t for t in altTrajectories]
             candidate_length = float("inf")
             candidate = None
-            for n in candidates:
-                if len(n.statesList()) < candidate_length:
-                    candidate_length = len(n.statesList())
-                    candidate = n
+            for t in candidates:
+                if len(t.statesList()) < candidate_length:
+                    candidate_length = len(t.statesList())
+                    candidate = t
 
             delta = candidate_length - current_quality 
             if random.random() < math.exp(-delta / T):
