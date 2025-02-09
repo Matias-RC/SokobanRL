@@ -57,7 +57,7 @@ def kOpt(initial_state, terminalNode, k,l, manager):
 
 def simulated_annealing_trajectory(
     initial_solution: Node,
-    neighbor_generator: Callable[[Node], List[Node]],
+    generator: Callable[[Node], List[Node]],
     q: Callable[[Node], float],
         # neighbor_generator takes a current solution (Node) and returns a list of new candidate solutions.
     T_init: float = 1000.0,
@@ -70,21 +70,27 @@ def simulated_annealing_trajectory(
     T = T_init
 
     while iteration < max_iter and T > T_min:
-        neighbors = neighbor_generator(current)
-        if not neighbors:
+        alts = generator(current, q)
+        if not alts:
             break
 
         current_quality = len(current)
         
-        improved = [len(n.statesList()) for n in neighbors if len(n.statesList()) < current_quality]
+        improved = [len(n.statesList()) for n in alts if len(n.statesList()) < current_quality]
 
         if improved:
             candidate = min(improved)
             current = candidate
         else:
-            candidates = [len(n.statesList()) for n in neighbors]
-            candidate = min(candidates)
-            delta = candidate - current_quality 
+            candidates = [n for n in alts]
+            candidate_length = float("inf")
+            candidate = None
+            for n in candidates:
+                if len(n.statesList()) < candidate_length:
+                    candidate_length = len(n.statesList())
+                    candidate = n
+
+            delta = candidate_length - current_quality 
             if random.random() < math.exp(-delta / T):
                 current = candidate
 
