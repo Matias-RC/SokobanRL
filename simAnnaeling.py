@@ -1,3 +1,4 @@
+from ast import Tuple
 from managers.sokoban_manager import SokobanManager, Node
 from collections import defaultdict
 import math
@@ -55,8 +56,32 @@ def kOpt(initial_state, terminalNode, k,l, manager):
     posterior.parent = node
     return terminalNode
 
+def perceivedImprovability(node: Node, q: Callable[[Tuple[Tuple[int]]], float], manager:SokobanManager, library:List[List[Tuple[int]]]) -> float:
+    states = node.statesList()
+    perceivedImprovements = []
+    for idx, nodeState in enumerate(states[:-2]):
+        nextValue = q(states[idx+1])
+        for action in library:
+            bool_condition, new_node = manager.LegalUpdate(macro=action,game_data=nodeState,node=None) 
+            if bool_condition and states[idx+1] != new_node.state:
+                percivedValue = q(new_node.state)
+                if nextValue < percivedValue:
+                    perceivedImprovements.append([nextValue, percivedValue, action, nodeState, new_node.state])
+    if not perceivedImprovements:
+        return 0
+    else:
+        score = 0
+        for i in perceivedImprovements:
+            delta = i[1]-i[0]
+            if score < delta:
+                score = delta
+        return score
+
+
 def simulated_annealing_trajectory(
     initial_solution: Node,
+    manager:SokobanManager,
+    library: List[List[Tuple[int]]],
     generator: Callable[[Node, Callable[[Node], float], int], List[Node]],
     q: Callable[[Node], float],
     perceivedImprovability: Callable[[Node], float],
@@ -70,7 +95,7 @@ def simulated_annealing_trajectory(
     T = T_init
 
     while T > T_min and pool:
-        candidate = max(pool, key=perceivedImprovability)
+        candidate = max(pool, key=lambda node: perceivedImprovability(node, q, manager))
         pool.remove(candidate)
         altTrajectories = generator(candidate, q, num_alternatives)
 
