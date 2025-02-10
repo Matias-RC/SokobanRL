@@ -72,7 +72,7 @@ def perceivedImprovability(
             if bool_condition and states[idx+1] != new_node.state:
                 percivedValue = q(new_node.state, actions[:idx].append(action))
                 if nextValue < percivedValue:
-                    perceivedImprovements.append([nextValue, percivedValue, action, actions[:idx], nodeState, new_node.state])
+                    perceivedImprovements.append([nextValue, percivedValue, action, actions[:idx], nodeState, new_node.state, idx])
     if not perceivedImprovements:
         return 0, perceivedImprovements
     else:
@@ -82,6 +82,15 @@ def perceivedImprovability(
             if score < delta:
                 score = delta
         return score, perceivedImprovements
+
+def generator(candidate:Node, q, num_alternatives, percivedImprovements):
+    nodesList = candidate.nodesList()
+    bundle = []
+    for i in percivedImprovements:
+        bundle.append(nodesList[i[-1]], i[0]-i[1])
+    if len(bundle) > num_alternatives:
+        pass
+    return "p"
 
 
 def simulated_annealing_trajectory(
@@ -115,7 +124,7 @@ def simulated_annealing_trajectory(
             break
 
         pool.remove(candidate)
-        altTrajectories = generator(candidate, q, num_alternatives)
+        altTrajectories = generator(candidate, q, num_alternatives, candidateData)
         data.append((candidateData, altTrajectories))
 
         for alt in altTrajectories:
