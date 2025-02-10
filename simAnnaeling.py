@@ -83,14 +83,23 @@ def perceivedImprovability(
                 score = delta
         return score, perceivedImprovements
 
-def generator(candidate:Node, q, num_alternatives, percivedImprovements):
-    nodesList = candidate.nodesList()
-    bundle = []
-    for i in percivedImprovements:
-        bundle.append(nodesList[i[-1]], i[0]-i[1])
+def generator(candidate, q, num_alternatives, perceived_improvements, manger):
+    nodes_list = candidate.nodesList()
+    bundle = [(nodes_list[i[-1]], i[0] - i[1]) for i in perceived_improvements]
+    
+    # If more than num_alternatives, select the top num_alternatives based on improvement value
     if len(bundle) > num_alternatives:
-        pass
-    return "p"
+        bundle.sort(key=lambda x: x[1], reverse=True)  # Sort by improvement value descending
+        bundle = bundle[:num_alternatives]
+    
+    # If fewer than num_alternatives, add unique indices
+    existing_indices = {i[-1] for i in perceived_improvements}  # Indices already used
+    available_indices = list(set(range(len(nodes_list))) - existing_indices)
+    
+    while len(bundle) < num_alternatives and available_indices:
+        new_index = random.choice(available_indices)
+        bundle.append((nodes_list[new_index], 0))  # 0 as placeholder improvement
+        available_indices.remove(new_index)  # Ensure no repetition
 
 
 def simulated_annealing_trajectory(
@@ -124,7 +133,7 @@ def simulated_annealing_trajectory(
             break
 
         pool.remove(candidate)
-        altTrajectories = generator(candidate, q, num_alternatives, candidateData)
+        altTrajectories = generator(candidate, q, num_alternatives, candidateData, manager)
         data.append((candidateData, altTrajectories))
 
         for alt in altTrajectories:
