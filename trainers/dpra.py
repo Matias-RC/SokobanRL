@@ -5,6 +5,8 @@ import torch.optim as optim
 import numpy as np
 from collections import defaultdict
 import random
+from data_generators.collate_fn import collate_fn
+from torch.utils.data import Dataset, DataLoader
 
 # DeepPairwiseRankAggregation
 class DPRA:
@@ -16,11 +18,16 @@ class DPRA:
         self.epochs = 100
         self.batch_size = 32
         self.device = torch.device(device if torch.cuda.is_available() else "cpu")
+        self.collate_fn = collate_fn
 
     def do(self, dataset, model):
 
         learner = model.get_learner()
         learner.is_training = True
+
+        dataloader = DataLoader(dataset,
+                                shuffle = True,
+                                collate_fn=self.collate_fn)
         
         self.fit(dataset, learner)
 
@@ -28,14 +35,14 @@ class DPRA:
 
         return model.set_learner(learner)
     
-    def fit(self, dataset, learner):
+    def fit(self, dataloader, learner):
 
         optimizer = self.optimizer()(learner.parameters(), lr=self.lr)
         loss_function = self.loss()
 
         for epoch in range(self.epochs):
             # Train model
-            for batch in dataset: # batch is a tuple of (example, signal) -> pairwise_batch is a tuple of (example1, example2, label) where label is signal1 > signal2
+            for batch in dataloader: # batch is a tuple of (example, signal) -> pairwise_batch is a tuple of (example1, example2, label) where label is signal1 > signal2
                 # Forward pass
                 output = learner(batch)
                 # Compute loss

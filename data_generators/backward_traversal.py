@@ -1,4 +1,6 @@
 
+
+
 class BackwardTraversal:
     def __init__(self, session, model, manager, maximumDepth, testsPerSearch, inverseManager):
         self.session  = session

@@ -17,6 +17,7 @@ class Fantasizer:
                 
     def do(self, session, model):
 
+        #dataset of pytorch
         dataset = self.data_generator.do(session, model)
 
         trained_model = self.trainer.do(dataset, model)
