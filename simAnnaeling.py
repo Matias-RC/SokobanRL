@@ -72,16 +72,16 @@ def perceivedImprovability(
             if bool_condition and states[idx+1] != new_node.state:
                 percivedValue = q(new_node.state)
                 if nextValue < percivedValue:
-                    perceivedImprovements.append([nextValue, percivedValue, action, nodeState, new_node.state])
+                    perceivedImprovements.append([nextValue, percivedValue, action, actions[:idx], nodeState, new_node.state])
     if not perceivedImprovements:
-        return 0
+        return 0, perceivedImprovements
     else:
         score = 0
         for i in perceivedImprovements:
             delta = i[1]-i[0]
             if score < delta:
                 score = delta
-        return score
+        return score, perceivedImprovements
 
 
 def simulated_annealing_trajectory(
@@ -90,21 +90,33 @@ def simulated_annealing_trajectory(
     library: List[List[Tuple[int]]],
     generator: Callable[[Node, Callable[[Node], float], int], List[Node]],
     q: Callable[[Tuple[Tuple[int]]], float],
-    perceivedImprovability: Callable[[Node], float],
+    perceivedImprovability: Callable[[Node, Callable[[Tuple[Tuple[int]],List[List[Tuple[int]]]], float],List[List[Tuple[int]]]], float],
     num_alternatives: int = 5,
     T_init: float = 1000.0,
     alpha: float = 0.95,
     T_min: float = 1e-3
-) -> Node:
+) -> List[List[Node], List[Tuple]]:
     cache: List[Node] = [initial_solution]
     pool: List[Node] = [initial_solution]
     T = T_init
-
+    data = []
     while T > T_min and pool:
-        candidate = max(pool, key=lambda node: perceivedImprovability(node, q, manager, library))
+        candidate = None
+        candidateData = None
+        score = 0
+        for node in pool:
+            newScore, percievedImprovements = perceivedImprovability(node, q, manager, library)
+            if newScore  > score:
+                score  = newScore
+                candidate = node
+                candidateData = percievedImprovements
+
+        if candidate is None:
+            break
+
         pool.remove(candidate)
         altTrajectories = generator(candidate, q, num_alternatives)
-
+        data.append((candidateData, altTrajectories))
 
         for alt in altTrajectories:
             alt_quality = len(alt.statesList())
@@ -119,4 +131,4 @@ def simulated_annealing_trajectory(
             cache.append(alt)
         T *= alpha
 
-    return cache
+    return cache, data
