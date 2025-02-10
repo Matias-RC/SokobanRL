@@ -3,6 +3,7 @@ import torch.nn as nn
 import math
 from opt_einsum import contract
 
+#TODO: Incorporate alibi 
 class StandardAttention(nn.Module):
     def __init__(
         self,
