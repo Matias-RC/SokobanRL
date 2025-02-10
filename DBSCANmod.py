@@ -2,6 +2,11 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
 
+"""
+Concept for later on
+"""
+
+
 class ModifiedDBSCAN:
     def __init__(self, epsilon=0.5, min_samples=4, fine_tune=False, max_iterations=50, epsilon_tolerance=1e-4):
         self.epsilon = epsilon
