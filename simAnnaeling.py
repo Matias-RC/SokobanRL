@@ -120,21 +120,105 @@ def perceived_improvability(node, delta_scorer, manager, move_library):
         return best_delta, improvements
 
 
-def alternative_generator(current_solution,delta_scorer,num_alternatives,improvements,manager):
-    node_list = current_solution.nodesList()
-    bundle = [(node_list[i[-1]], i[0] - i[1]) for i in improvements]
+def alternative_generator(current_solution, delta_scorer, num_alternatives, improvements, manager, move_library, max_depth=100):
+    """
+    Generate alternative solution trajectories.
     
+    For each candidate node in the improvement bundle:
+      - Starting from the candidate node, simulate a trajectory.
+      - At each step, gather all legal moves (with resulting nodes) from the current node.
+      - Call delta_scorer.q(current_node, legal_moves) to obtain probabilities for the legal actions.
+      - Choose the action with the highest probability and update the trajectory.
+      - Stop if the state is failed (manager.isFailed) or successful (manager.isEndState),
+        or if a maximum depth is reached.
+    
+    Parameters:
+      current_solution: The current solution node (provides nodesList()).
+      delta_scorer: An instance with a method q(node, legal_actions) that returns a probability for each move.
+      num_alternatives: The number of alternative trajectories to generate.
+      improvements: A list of improvement details; each improvement is assumed to have its last element as an index.
+      manager: Provides methods such as LegalUpdate(move, state, node), isFailed(node), and isEndState(node).
+      max_depth: The maximum depth (number of moves) to simulate for each alternative trajectory.
+      move_library: The list of moves to try at each step.
+    
+    Returns:
+      A list of alternative trajectories. Each trajectory is a list of nodes representing a candidate solution.
+    """
+    # Get the list of nodes from the current solution.
+    node_list = current_solution.nodesList()
+    
+    # Build the initial bundle from improvements.
+    # Each improvement is assumed to have its last element as an index into node_list.
+    bundle = [(node_list[imp[-1]], imp[0] - imp[1]) for imp in improvements]
+    
+    # If we have more candidates than needed, keep only the top ones.
     if len(bundle) > num_alternatives:
         bundle.sort(key=lambda x: x[1], reverse=True)
         bundle = bundle[:num_alternatives]
     
-    used_indices = {improvement[-1] for improvement in improvements}
+    # If the bundle is too short, add random nodes from the solution (ensuring no duplicates).
+    used_indices = {imp[-1] for imp in improvements}
     available_indices = list(set(range(len(node_list))) - used_indices)
-    
     while len(bundle) < num_alternatives and available_indices:
         random_index = random.choice(available_indices)
-        bundle.append((node_list[random_index], 0))  # 0 as placeholder
+        bundle.append((node_list[random_index], 0))  # Use 0 as a placeholder improvement value.
         available_indices.remove(random_index)
+    
+    alternative_trajectories = []
+    
+    # For each candidate node in the bundle, simulate an alternative trajectory.
+    for candidate_node, predictedDeltaScore in bundle:
+        trajectory = [candidate_node]
+        current_node = candidate_node
+        current_move_sequence = []  # To track the moves taken in the simulation
+        
+        for depth in range(max_depth):
+            legal_actions = []  # List to store legal moves
+            legal_new_nodes = []  # Corresponding new nodes for the legal moves
+            
+            # Gather all legal moves from the current node.
+            for move in move_library:
+                is_valid, new_node = manager.LegalUpdate(move, current_node.state, current_node)
+                if is_valid:
+                    legal_actions.append(move)
+                    legal_new_nodes.append(new_node)
+            
+            # If no legal moves are available, break the simulation.
+            if not legal_actions:
+                break
+            
+            # Use the scorer's q method to get probabilities for each legal move.
+            action_probabilities = delta_scorer.q(current_node, legal_actions)
+            
+            # Find the move with the highest probability.
+            best_index = None
+            best_probability = -1
+            for i, prob in enumerate(action_probabilities):
+                if prob > best_probability:
+                    best_probability = prob
+                    best_index = i
+            
+            # If for some reason no move is selected, break.
+            if best_index is None:
+                break
+            
+            best_move = legal_actions[best_index]
+            best_new_node = legal_new_nodes[best_index]
+            
+            # Update the trajectory and move sequence.
+            trajectory.append(best_new_node)
+            current_move_sequence.append(best_move)
+            current_node = best_new_node
+            
+            # Check terminal conditions.
+            if manager.isFailed(current_node):
+                break
+            if manager.isEndState(current_node):
+                break
+        
+        alternative_trajectories.append((trajectory, predictedDeltaScore))
+    
+    return alternative_trajectories
     
 
 # =============================================================================
