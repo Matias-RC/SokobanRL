@@ -1,0 +1,46 @@
+import torch
+import torch.nn as nn
+
+from models.transformers.embeddings.theoretical import TheoreticalEmbedding
+from models.transformers.embeddings.learnable import LearnableEmbedding
+
+
+class BackboneEmbedding(nn.Module):
+    def __init__(
+        self,
+        hidden_dim: int,
+        embedding_norm_scalar: float = 1.0,
+        mode: str = None,
+        embedding_type: str = "theoretical",
+        dtype: torch.dtype = torch.float64,
+        device: str = "cpu",
+        is_edge: bool = False,
+        num_embeddings: int = 1,
+        max_length: int = 514,
+    ):
+        super(BackboneEmbedding, self).__init__()
+
+        self.embedding_type = embedding_type
+        if self.embedding_type == "theoretical":
+            self.embedding = TheoreticalEmbedding(
+                hidden_dim=hidden_dim,
+                embedding_norm_scalar=embedding_norm_scalar,
+                mode=mode,
+                dtype=dtype,
+                device=device,
+                is_edge=is_edge,
+            )
+        elif self.embedding_type == "learnable":
+            self.embedding = LearnableEmbedding(
+                hidden_dim=hidden_dim,
+                embedding_norm_scalar=embedding_norm_scalar,
+                mode=mode,
+                dtype=dtype,
+                device=device,
+                is_edge=is_edge,
+                num_embeddings=num_embeddings,
+                max_length=max_length
+            )
+
+    def forward(self, batch: dict) -> torch.Tensor:
+        return self.embedding(batch)
