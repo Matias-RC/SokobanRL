@@ -6,11 +6,15 @@ from data.task import Task
 from data.env_objects.sokoban_scenario import Scenario
 from learning.curriculum import Curriculum
 from models.dreamcoder.q_uniform import q_uniform
-from DeepQNetwork.models.mlp import DQN
 from managers.sokoban_manager import SokobanManager
 
+# deep q network
+from DeepQNetwork.models.mlp import DQN
+
+deepQNetwork = DQN()
+
+#scenarios and tasks
 NUM_TASKS = 20
-GRID_SIZE = 4
 
 actions_for_sokoban = [
     [(-1, 0)],  # 'w' (UP)
@@ -19,9 +23,7 @@ actions_for_sokoban = [
     [(0, 1)]    # 'd' (RIGHT)
 ]
 
-scenarios = [ Scenario(width=GRID_SIZE, height=GRID_SIZE) for _ in range(NUM_TASKS)] #room
-
-print("Scenarios:", scenarios)
+scenarios = [ Scenario(width=8, height=8) for _ in range(NUM_TASKS)] #room
 
 session_1 = [
     Task(
@@ -30,26 +32,21 @@ session_1 = [
 ]
 
 curriculum = Curriculum(
-
     sessions={
         "S1": session_1
     },
     strategy = "sorted"
 )
 
+#sokoban manager and agent
 m = SokobanManager()
+
 a = Agent(
     actions=actions_for_sokoban,
     manager=m,
-    q_net=q_uniform,
+    q_net= deepQNetwork,
     batchSize=10,
     drawSize=1
 )
 
-for key_sessions, session in curriculum.sessions.items():
-    a.wake(m,session) # solve all the tasks in the session
-    #a.sleep()       # use each solution from the last session to learn patterns trought two-phases: (1) Abstraction and (2) Dreaming
-    # (1) Abstraction: Found factors (macro-actions) to decrease the solver's search-space
-    # (2) Dreaming: TODO future
 
-print("Factors:", a.current_factors)

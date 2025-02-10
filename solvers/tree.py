@@ -5,7 +5,7 @@ from dcLogic import Solver #solver for sokoban
 import numpy as np
 
 class MonteCarloTreeSearch:
-    def __init__(self,library_actions,manager,batchSize, drawSize,max_depth=100,max_breadth=10000):
+    def __init__(self,library_actions,manager,batchSize,drawSize,max_depth=100,max_breadth=10000):
         self.manager = manager
         self.library_actions = library_actions
         self.frontier = []
@@ -16,6 +16,8 @@ class MonteCarloTreeSearch:
         self.drawSize = drawSize
 
         self.seen_states = set() # O(1) for search  
+
+        self.is_first_session = True
 
         Keep_register = True
         
@@ -45,6 +47,13 @@ class MonteCarloTreeSearch:
         return batches
     
     def do(self,task,q_function):
+
+        if self.is_first_session:
+            self.do_first_session(task,q_function)
+        else:
+            self.do_next_sessions(task,q_function)
+
+    def do_first_session(self,task,q_function):
         node = self.manager.initializer(task.initial_state)
         self.frontier.append(node)
         depth = self.max_depth
@@ -78,5 +87,8 @@ class MonteCarloTreeSearch:
                         selected_nodes.append(batch[idx])
                         
                 self.frontier = selected_nodes
+    
+    def do_next_sessions(self,task,q_function):
+        pass
 
                     
