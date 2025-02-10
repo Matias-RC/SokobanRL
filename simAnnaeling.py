@@ -4,7 +4,7 @@ from collections import defaultdict
 import math
 import random
 import heapq
-from typing import Callable, List, Any
+from typing import Any, Callable, Dict, List, Tuple
 from dataclasses import dataclass
 from typing import Optional
 
@@ -15,138 +15,201 @@ actions_for_sokoban = [
     [(0, 1)]    # 'd' (RIGHT)
 ]
 
-def kOpt(initial_state, terminalNode, k,l, manager):
+def k_opt(initial_state,final_node,k,moves,manager):
     """
-    k-opt analysis involves deleting k edges from the current solution to the problem, 
-    creating k sub-tours. -> combinatorial
+    Perform k-opt analysis on the solution by removing k edges to create sub-tours and reconnect them.
+    
+    Parameters:
+        initial_state: The initial state of the Sokoban game.
+        final_node: The final node representing the current solution.
+        k: The number of edges to remove.
+        moves: List of possible moves (actions).
+        manager: A manager instance providing methods like initializer() and LegalUpdate().
+        
+    Returns:
+        The modified final_node after the k-opt improvement.
     """
     _ = manager.initializer(initial_state)
-    statesList = terminalNode.statesList()
-    nodesList = terminalNode.nodesList()
-    node = nodesList[0]
-    idx  = 0
-    while idx + k+1< len(nodesList):
-        frontier = [node]
+    state_list = final_node.statesList()
+    node_list = final_node.nodesList()
+    current_node = node_list[0]
+    current_index = 0
+    
+    while current_index + k + 1 < len(node_list):
+        frontier = [current_node]
+        # Expand the frontier k times using available moves.
         for _ in range(k):
             new_frontier = []
-            for i in frontier:
-                for action in l:
-                    bool_condition, new_node = manager.LegalUpdate(action,i.state, i)
-                    if bool_condition:
-                        new_frontier.append(new_node)
+            for node in frontier:
+                for move in moves:
+                    is_valid, updated_node = manager.LegalUpdate(move, node.state, node)
+                    if is_valid:
+                        new_frontier.append(updated_node)
             frontier = new_frontier
-
-        nodeProposals = defaultdict(list)
-        outreach = 1  # Default outreach
-
-        for i in frontier:
-            for j, s in enumerate(statesList[idx + k + 1:]):
-                if i.state == s:
-                    outreach = k + j + 1
-                    nodeProposals[outreach].append(i)  # Store the proposal correctly
-        if nodeProposals.keys():  # This ensures all lists have at least one valid proposal
-            biggest_outreach = max(nodeProposals.keys())  # Get the highest outreach key
-            node = nodeProposals[biggest_outreach][0]  # Get the first proposal with the biggest outreach
-            idx += biggest_outreach 
+        
+        # Gather candidate nodes that can reconnect to a later state.
+        node_proposals: Dict[int, List[Any]] = defaultdict(list)
+        for candidate_node in frontier:
+            for offset, state in enumerate(state_list[current_index + k + 1:]):
+                if candidate_node.state == state:
+                    outreach = k + offset + 1
+                    node_proposals[outreach].append(candidate_node)
+        
+        if node_proposals:
+            max_outreach = max(node_proposals.keys())
+            current_node = node_proposals[max_outreach][0]
+            current_index += max_outreach
         else:
-            idx += 1
-            node = nodesList[idx]
-            
-    posterior = nodesList[idx+1]
-    posterior.parent = node
-    return terminalNode
-
-def perceivedImprovability(
-        node: Node,
-        q: Callable[[Tuple[Tuple[int]],List[List[Tuple[int]]]], float], 
-        manager:SokobanManager,
-        library:List[List[Tuple[int]]]
-) -> float:
-    states = node.statesList()
-    actions = node.trajectory()
-    perceivedImprovements = []
-    for idx, nodeState in enumerate(states[:-2]):
-        nextValue = q(states[idx+1], actions[:idx+1])
-        for action in library:
-            bool_condition, new_node = manager.LegalUpdate(macro=action,game_data=nodeState,node=None) 
-            if bool_condition and states[idx+1] != new_node.state:
-                percivedValue = q(new_node.state, actions[:idx].append(action))
-                if nextValue < percivedValue:
-                    perceivedImprovements.append([nextValue, percivedValue, action, actions[:idx], nodeState, new_node.state, idx])
-    if not perceivedImprovements:
-        return 0, perceivedImprovements
-    else:
-        score = 0
-        for i in perceivedImprovements:
-            delta = i[1]-i[0]
-            if score < delta:
-                score = delta
-        return score, perceivedImprovements
-
-def generator(candidate, q, num_alternatives, perceived_improvements, manger):
-    nodes_list = candidate.nodesList()
-    bundle = [(nodes_list[i[-1]], i[0] - i[1]) for i in perceived_improvements]
+            current_index += 1
+            current_node = node_list[current_index]
     
-    # If more than num_alternatives, select the top num_alternatives based on improvement value
+    posterior_node = node_list[current_index + 1]
+    posterior_node.parent = current_node
+    return final_node
+
+# =============================================================================
+# Perceived Improvability Function
+# =============================================================================
+def perceived_improvability(node, delta_scorer, manager, move_library):
+    """
+    Evaluate potential improvements along a node's trajectory by considering alternative moves.
+    
+    For each state (except the last two) in the trajectory, compute the baseline quality score.
+    Then, for each alternative move from the move_library, compute an alternative quality score.
+    If the alternative score is higher, record the improvement details.
+    
+    Parameters:
+        node: The current node with a trajectory.
+        delta_scorer: An instance of DeltaScorer to score states.
+        manager: A manager instance that provides a LegalUpdate() method.
+        move_library: A list of alternative moves (macros) to consider.
+        
+    Returns:
+        A tuple with:
+            - The best improvement delta (score difference).
+            - A list of improvement details, each containing:
+              [baseline_score, improved_score, move, action_sequence, current_state, new_state, index]
+    """
+    state_list = node.statesList()
+    action_sequence = node.trajectory()
+    improvements = []
+    
+    for idx, current_state in enumerate(state_list[:-2]):
+        baseline_score = delta_scorer.m(state_list[idx + 1], action_sequence[:idx + 1])
+        for macro_move in move_library:
+            is_valid, new_node = manager.LegalUpdate(macro=macro_move, game_data=current_state, node=None)
+            if is_valid and state_list[idx + 1] != new_node.state:
+                # Create a new action sequence by adding the macro_move.
+                new_actions = action_sequence[:idx] + [macro_move]
+                improved_score = delta_scorer.m(new_node.state, new_actions)
+                if baseline_score < improved_score:
+                    improvements.append([
+                        baseline_score,
+                        improved_score,
+                        macro_move,
+                        action_sequence[:idx],
+                        current_state,
+                        new_node.state,
+                        idx
+                    ])
+    
+    if not improvements:
+        return 0, improvements
+    else:
+        best_delta = max(improvement[1] - improvement[0] for improvement in improvements)
+        return best_delta, improvements
+
+
+def alternative_generator(current_solution,delta_scorer,num_alternatives,improvements,manager):
+    node_list = current_solution.nodesList()
+    bundle = [(node_list[i[-1]], i[0] - i[1]) for i in improvements]
+    
     if len(bundle) > num_alternatives:
-        bundle.sort(key=lambda x: x[1], reverse=True)  # Sort by improvement value descending
+        bundle.sort(key=lambda x: x[1], reverse=True)
         bundle = bundle[:num_alternatives]
     
-    # If fewer than num_alternatives, add unique indices
-    existing_indices = {i[-1] for i in perceived_improvements}  # Indices already used
-    available_indices = list(set(range(len(nodes_list))) - existing_indices)
+    used_indices = {improvement[-1] for improvement in improvements}
+    available_indices = list(set(range(len(node_list))) - used_indices)
     
     while len(bundle) < num_alternatives and available_indices:
-        new_index = random.choice(available_indices)
-        bundle.append((nodes_list[new_index], 0))  # 0 as placeholder improvement
-        available_indices.remove(new_index)  # Ensure no repetition
+        random_index = random.choice(available_indices)
+        bundle.append((node_list[random_index], 0))  # 0 as placeholder
+        available_indices.remove(random_index)
+    
 
-
-def simulated_annealing_trajectory(
-    initial_solution: Node,
-    manager:SokobanManager,
-    library: List[List[Tuple[int]]],
-    generator: Callable[[Node, Callable[[Node], float], int], List[Node]],
-    q: Callable[[Tuple[Tuple[int]]], float],
-    perceivedImprovability: Callable[[Node, Callable[[Tuple[Tuple[int]],List[List[Tuple[int]]]], float],List[List[Tuple[int]]]], float],
-    num_alternatives: int = 5,
-    T_init: float = 1000.0,
-    alpha: float = 0.95,
-    T_min: float = 1e-3
-) -> List[List[Node], List[Tuple]]:
-    cache: List[Node] = [initial_solution]
-    pool: List[Node] = [initial_solution]
-    T = T_init
-    data = []
-    while T > T_min and pool:
-        candidate = None
-        candidateData = None
-        score = 0
-        for node in pool:
-            newScore, percievedImprovements = perceivedImprovability(node, q, manager, library)
-            if newScore  > score:
-                score  = newScore
-                candidate = node
-                candidateData = percievedImprovements
-
-        if candidate is None:
+# =============================================================================
+# Simulated Annealing Trajectory Function
+# =============================================================================
+def simulated_annealing_trajectory(initial_solution,manager,move_library,alternative_generator_fn,delta_scorer,perceived_improvability_fn,num_alternatives = 5,initial_temperature = 1000.0,cooling_rate = 0.95,minimum_temperature= 1e-3):
+    """
+    Perform simulated annealing on solution trajectories to explore improvements.
+    
+    The algorithm selects a candidate from the pool, evaluates its potential improvements, generates
+    alternative trajectories, and then accepts new trajectories based on an annealing probability.
+    
+    Parameters:
+        initial_solution: The starting solution node.
+        manager: The manager instance for state updates.
+        move_library: A library of moves (macros) for potential improvements.
+        alternative_generator_fn: Function to generate alternative candidate nodes.
+        delta_scorer: An instance of DeltaScorer used for scoring.
+        perceived_improvability_fn: Function to assess a node's improvability.
+        num_alternatives: Number of alternative candidates to generate at each step.
+        initial_temperature: Starting temperature for annealing.
+        cooling_rate: Factor to decrease the temperature each iteration.
+        minimum_temperature: Temperature threshold to stop annealing.
+        
+    Returns:
+        A tuple with:
+            - A cache list of candidate solution nodes.
+            - Data collected during annealing (improvement details and generated alternatives).
+    """
+    solution_cache: List[Any] = [initial_solution]
+    candidate_pool: List[Any] = [initial_solution]
+    temperature = initial_temperature
+    annealing_data = []
+    
+    while temperature > minimum_temperature and candidate_pool:
+        best_candidate = None
+        best_improvement_details = None
+        best_improvement_score = 0
+        
+        # Evaluate each candidate in the pool.
+        for candidate in candidate_pool:
+            improvement_score, improvement_details = perceived_improvability_fn(
+                candidate, delta_scorer, manager, move_library
+            )
+            if improvement_score > best_improvement_score:
+                best_improvement_score = improvement_score
+                best_candidate = candidate
+                best_improvement_details = improvement_details
+        
+        if best_candidate is None:
             break
-
-        pool.remove(candidate)
-        altTrajectories = generator(candidate, q, num_alternatives, candidateData, manager)
-        data.append((candidateData, altTrajectories))
-
-        for alt in altTrajectories:
-            alt_quality = len(alt.statesList())
-            candidate_quality = len(candidate.statesList())
-            if alt_quality < candidate_quality:
-                pool.append(alt)
+        
+        candidate_pool.remove(best_candidate)
+        
+        # Generate alternative trajectories from the best candidate.
+        alternative_candidates = alternative_generator_fn(
+            best_candidate, delta_scorer, num_alternatives, best_improvement_details, manager
+        )
+        annealing_data.append((best_improvement_details, alternative_candidates))
+        
+        # Decide whether to accept each alternative candidate.
+        for alternative, _ in alternative_candidates:
+            alternative_quality = len(alternative.statesList())
+            candidate_quality = len(best_candidate.statesList())
+            
+            if alternative_quality < candidate_quality:
+                candidate_pool.append(alternative)
                 break
             else:
-                delta = alt_quality - candidate_quality
-                if random.random() < math.exp(-delta / T):
-                    pool.append(alt)
-            cache.append(alt)
-        T *= alpha
-
-    return cache, data
+                quality_delta = alternative_quality - candidate_quality
+                acceptance_probability = math.exp(-quality_delta / temperature)
+                if random.random() < acceptance_probability:
+                    candidate_pool.append(alternative)
+            solution_cache.append(alternative)
+        
+        temperature *= cooling_rate
+    
+    return solution_cache, annealing_data
