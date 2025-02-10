@@ -70,7 +70,7 @@ def perceivedImprovability(
         for action in library:
             bool_condition, new_node = manager.LegalUpdate(macro=action,game_data=nodeState,node=None) 
             if bool_condition and states[idx+1] != new_node.state:
-                percivedValue = q(new_node.state)
+                percivedValue = q(new_node.state, actions[:idx].append(action))
                 if nextValue < percivedValue:
                     perceivedImprovements.append([nextValue, percivedValue, action, actions[:idx], nodeState, new_node.state])
     if not perceivedImprovements:
