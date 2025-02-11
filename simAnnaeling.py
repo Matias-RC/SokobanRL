@@ -279,7 +279,7 @@ def simulated_annealing_trajectory(initial_solution,grid,manager,move_library,al
         
         # Generate alternative trajectories from the best candidate.
         alternative_candidates = alternative_generator_fn(
-            best_candidate, delta_scorer, num_alternatives, best_improvement_details, manager
+            best_candidate, delta_scorer, num_alternatives, best_improvement_details, manager, actions_for_sokoban
         )
         annealing_data.append((best_improvement_details, alternative_candidates))
         

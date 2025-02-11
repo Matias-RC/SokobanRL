@@ -1,5 +1,4 @@
 from turtle import pos
-from data.task import Task
 import numpy as np
 from collections import defaultdict, deque
 import random
@@ -108,7 +107,7 @@ class SokobanManager:
                 boxes.add((player[0] + dx, player[1] + dy))
         posBoxes = tuple(boxes)
         new_node = Node(state=(player,posBoxes),parent=node,action=macro)
-        condition = not self.isFailed(posBoxes)
+        condition = not self.isFailed(new_node)
         return condition, new_node
     
     def initializer(self,initial_state):
