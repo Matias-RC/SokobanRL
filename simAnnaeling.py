@@ -252,7 +252,10 @@ def simulated_annealing_trajectory(initial_solution,grid,manager,move_library,al
     candidate_pool: List[Any] = [initial_solution]
     temperature = initial_temperature
     annealing_data = []
+    # Initialize the manager with the grid.
     manager.initializer(grid)
+    # Get grid dimensions.
+    grid_shape = grid.shape
     
     while temperature > minimum_temperature and candidate_pool:
         best_candidate = None
@@ -296,5 +299,6 @@ def simulated_annealing_trajectory(initial_solution,grid,manager,move_library,al
             solution_cache.append(alternative)
         
         temperature *= cooling_rate
+        break
     
     return solution_cache, annealing_data
