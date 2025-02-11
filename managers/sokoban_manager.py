@@ -8,9 +8,10 @@ from typing import Any, Optional, List
 @dataclass
 class Node:
     state: Any
+    goals: Any
     parent: Optional['Node'] = None
     action: Optional[Any] = None
-
+    
     def trajectory(self) -> List['Node']:
         """
         Reconstructs the trajectory (path) from the root to this node.
@@ -108,12 +109,12 @@ class SokobanManager:
                 boxes.remove(player)
                 boxes.add((player[0] + dx, player[1] + dy))
         posBoxes = tuple(boxes)
-        new_node = Node(state=(player,posBoxes),parent=node,action=macro)
+        new_node = Node(state=(player,posBoxes),goals=node.goals,parent=node,action=macro)
         condition = not self.isFailed(new_node)
         return condition, new_node
     
     def initializer(self,initial_state):
         self.posWalls = self.PosOfWalls(initial_state)
         self.posGoals = self.PosOfGoals(initial_state)
-        node = Node(state=(self.PosOfPlayer(initial_state), self.PosOfBoxes(initial_state)))
+        node = Node(state=(self.PosOfPlayer(initial_state), self.PosOfBoxes(initial_state)), goals=self.posGoals)
         return node

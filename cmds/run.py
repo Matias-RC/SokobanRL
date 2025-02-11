@@ -8,7 +8,7 @@ from learning.curriculum import Curriculum
 from models.dreamcoder.q_uniform import q_uniform
 from managers.sokoban_manager import SokobanManager
 
-NUM_TASKS = 3
+NUM_TASKS = 2
 GRID_SIZE = 6
 
 actions_for_sokoban = [
@@ -46,8 +46,9 @@ a = Agent(
 )
 
 for key_sessions, session in curriculum.sessions.items():
-    a.wake(m,session) # solve all the tasks in the session
-    #a.sleep()       # use each solution from the last session to learn patterns trought two-phases: (1) Abstraction and (2) Dreaming
+    session_solved = a.wake(m,session) # solve all the tasks in the session
+    print(session_solved[0])
+    a.sleep()       # use each solution from the last session to learn patterns trought two-phases: (1) Abstraction and (2) Dreaming
     # (1) Abstraction: Found factors (macro-actions) to decrease the solver's search-space
     # (2) Dreaming: TODO future
 
