@@ -1,3 +1,4 @@
+from turtle import pos
 from data.task import Task
 import numpy as np
 from collections import defaultdict, deque
@@ -64,7 +65,8 @@ class SokobanManager:
         target = (posPlayer[0] + factor * dx, posPlayer[1] + factor * dy)
         return target not in self.posWalls and target not in posBoxes
     
-    def isFailed(self, posBox):
+    def isFailed(self, node):
+        posPlayer, posBox = node.state
         """This function used to observe if the state is potentially failed, then prune the search"""
         rotatePattern = [[0,1,2,3,4,5,6,7,8],
                         [2,5,8,1,4,7,0,3,6],

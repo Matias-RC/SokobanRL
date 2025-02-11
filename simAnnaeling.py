@@ -224,7 +224,7 @@ def alternative_generator(current_solution, delta_scorer, num_alternatives, impr
 # =============================================================================
 # Simulated Annealing Trajectory Function
 # =============================================================================
-def simulated_annealing_trajectory(initial_solution,manager,move_library,alternative_generator_fn,delta_scorer,perceived_improvability_fn,num_alternatives = 5,initial_temperature = 1000.0,cooling_rate = 0.95,minimum_temperature= 1e-3):
+def simulated_annealing_trajectory(initial_solution,grid,manager,move_library,alternative_generator_fn,delta_scorer,perceived_improvability_fn,num_alternatives = 5,initial_temperature = 1000.0,cooling_rate = 0.95,minimum_temperature= 1e-3):
     """
     Perform simulated annealing on solution trajectories to explore improvements.
     
@@ -252,6 +252,7 @@ def simulated_annealing_trajectory(initial_solution,manager,move_library,alterna
     candidate_pool: List[Any] = [initial_solution]
     temperature = initial_temperature
     annealing_data = []
+    manager.initializer(grid)
     
     while temperature > minimum_temperature and candidate_pool:
         best_candidate = None
