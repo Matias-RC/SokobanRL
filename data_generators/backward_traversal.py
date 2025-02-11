@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
+import random
 
 
 class BackwardTraversal:
@@ -10,7 +11,13 @@ class BackwardTraversal:
         self.maxDepth = maximumDepth
         self.cadence = testsPerSearch
         self.inverseManager = inverseManager
-    def generate():
+    
+    def generate_examples(self,paths):
+        for path in paths:
+            #select random initial and terminal nodes
+            init_node = random.choice(path)
+            term_node = random.choice(path[init_node.pos:])
+            example = (init_node,term_node,init_node.trajectory(term_node)) #nodes and actions
         batch = []
         
     def do(self, session, model):
@@ -19,7 +26,7 @@ class BackwardTraversal:
             end_node = task.solution
             states_solution, action_solution = end_node.statesList(), end_node.trajectory()
             terminal, initialState = states_solution[-1], states_solution[0]
-            #self.manager.initializer(initialState)
-            self.inverseManager.initializer(initialState, terminal)
+            final_grid_state = self.inverseManager.initializer(initial_grid=task.initial_state,end_node=end_node)
+            print("OK")
             dataset.append(self.generate())
         return dataset
