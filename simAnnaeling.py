@@ -294,7 +294,6 @@ def simulated_annealing_trajectory(initial_solution,grid,manager,move_library,al
                 continue
             elif alternative_quality < candidate_quality:
                 candidate_pool.append(alternative)
-                break
             else:
                 quality_delta = alternative_quality - candidate_quality
                 acceptance_probability = math.exp(-quality_delta / temperature)
