@@ -93,9 +93,12 @@ for action in initial_solution:
     else:
         break
 
-simulated_annealing_trajectory(initial_solution=node, grid=grid,
+trajectories_cache, annealing_data =simulated_annealing_trajectory(initial_solution=node, grid=grid,
                                manager=SokobanManager(), move_library=library, 
                                alternative_generator_fn=alternative_generator, 
                                delta_scorer=DummyDeltaScorer(instanceWrapper.posGoals, instanceWrapper.posWalls, grid.shape),
                                perceived_improvability_fn=perceived_improvability,
                                num_alternatives=1)
+
+for t in trajectories_cache:
+    print(t.trajectory())

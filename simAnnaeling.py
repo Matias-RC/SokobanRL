@@ -143,6 +143,7 @@ def alternative_generator(current_solution, delta_scorer, num_alternatives, impr
     
     Returns:
       A list of alternative trajectories. Each trajectory is a list of nodes representing a candidate solution.
+      For each trajectory we want to discriminate if the trayectory was successful or not.
     """
     # Get the list of nodes from the current solution.
     node_list = current_solution.nodesList()
@@ -168,6 +169,7 @@ def alternative_generator(current_solution, delta_scorer, num_alternatives, impr
     
     # For each candidate node in the bundle, simulate an alternative trajectory.
     for candidate_node, predictedDeltaScore in bundle:
+        trajectorySuccess = False
         trajectory = [candidate_node]
         current_node = candidate_node
         current_move_sequence = []  # To track the moves taken in the simulation
@@ -206,7 +208,7 @@ def alternative_generator(current_solution, delta_scorer, num_alternatives, impr
             best_new_node = legal_new_nodes[best_index]
             
             # Update the trajectory and move sequence.
-            trajectory.append(best_new_node)
+            trajectory = best_new_node
             current_move_sequence.append(best_move)
             current_node = best_new_node
             
@@ -214,9 +216,10 @@ def alternative_generator(current_solution, delta_scorer, num_alternatives, impr
             if manager.isFailed(current_node):
                 break
             if manager.isEndState(current_node):
+                trajectorySuccess = True
                 break
         
-        alternative_trajectories.append((trajectory, predictedDeltaScore))
+        alternative_trajectories.append((trajectory, predictedDeltaScore, trajectorySuccess))
     
     return alternative_trajectories
     
@@ -248,7 +251,7 @@ def simulated_annealing_trajectory(initial_solution,grid,manager,move_library,al
             - A cache list of candidate solution nodes.
             - Data collected during annealing (improvement details and generated alternatives).
     """
-    solution_cache: List[Any] = [initial_solution]
+    trajectories_cache: List[Any] = [initial_solution]
     candidate_pool: List[Any] = [initial_solution]
     temperature = initial_temperature
     annealing_data = []
@@ -284,21 +287,24 @@ def simulated_annealing_trajectory(initial_solution,grid,manager,move_library,al
         annealing_data.append((best_improvement_details, alternative_candidates))
         
         # Decide whether to accept each alternative candidate.
-        for alternative, _ in alternative_candidates:
+        for alternative, predictedDeltaScore, trajectorySuccess  in alternative_candidates:
             alternative_quality = len(alternative.statesList())
             candidate_quality = len(best_candidate.statesList())
-            
-            if alternative_quality < candidate_quality:
+            if not trajectorySuccess:
+                continue
+            elif alternative_quality < candidate_quality:
                 candidate_pool.append(alternative)
                 break
             else:
                 quality_delta = alternative_quality - candidate_quality
                 acceptance_probability = math.exp(-quality_delta / temperature)
                 if random.random() < acceptance_probability:
+                    print("Accepting alternative")
                     candidate_pool.append(alternative)
-            solution_cache.append(alternative)
+            trajectories_cache.append(alternative)
         
         temperature *= cooling_rate
+        print(candidate_pool)
         break
     
-    return solution_cache, annealing_data
+    return trajectories_cache, annealing_data
