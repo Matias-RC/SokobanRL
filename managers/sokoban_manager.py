@@ -38,6 +38,8 @@ class Node:
             node = node.parent
         return list(reversed(path))
 
+
+
 class SokobanManager:
     def __init__(self):
         self.posWalls = None

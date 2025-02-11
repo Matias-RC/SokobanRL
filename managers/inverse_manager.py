@@ -42,7 +42,8 @@ class Node:
 class InverdedSokobanManager:
     ''' Manager for sokoban that generate an inversed path.'''
     def __init__(self):
-        pass
+        self.posWalls = None
+        self.posGoals = None
 
     def isLegalInversion(self, action, posPlayer, posBox): 
         xPlayer, yPlayer = posPlayer
