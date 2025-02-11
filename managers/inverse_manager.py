@@ -1,16 +1,61 @@
+from turtle import pos
+import numpy as np
+from collections import defaultdict, deque
+import random
+from dataclasses import dataclass
+from typing import Any, Optional, List
+
+
+
+@dataclass
+class Node:
+    ''' Data structure for a node in the search tree. '''
+    state: Any
+    parent: Optional['Node'] = None
+    action: Optional[Any] = None
+
+    def trajectory(self) -> List['Node']:
+        node, path = self, []
+
+        while node:
+            path.append(node.action)
+            node = node.parent
+            
+        return list(reversed(path))[1:]
+    
+    def statesList(self) -> List['Node']:
+        node, path = self, []
+
+        while node:
+            path.append(node.state)
+            node = node.parent
+        return list(reversed(path))
+    
+    def nodesList(self) -> List['Node']:
+        node, path = self, []
+        while node:
+            path.append(node)
+            node = node.parent
+        return list(reversed(path))
+
 
 class InverdedSokobanManager:
+    ''' Manager for sokoban that generate an inversed path.'''
     def __init__(self):
         pass
-    def isLegalInversion(self, action, posPlayer, posBox):
+
+    def isLegalInversion(self, action, posPlayer, posBox): 
         xPlayer, yPlayer = posPlayer
         x1, y1 = xPlayer - action[0], yPlayer - action[1]
         return (x1, y1) not in posBox + self.posWalls
+    
     def legalInverts(self, posPlayer, posBox):
+        ''' Returns the legal inversion moves for the player and boxes. '''
         allActions = [(-1,0), (0,-1), (1,0), (0,1)]
         xPlayer, yPlayer = posPlayer
         legalActions = []
         nextBoxArrengements = []
+
         for action in allActions:
             x1, y1 = xPlayer + action[0], yPlayer + action[1]
             # Convert tuple to list for modification
@@ -24,12 +69,16 @@ class InverdedSokobanManager:
             if self.isLegalInversion(action, posPlayer, posBox) and not self.isEndState(temp_boxes):
                 legalActions.append(action)
                 nextBoxArrengements.append(temp_boxes)
+        
+        condition = len(legalActions) > 0
                 
-        return tuple(tuple(x) for x in legalActions), nextBoxArrengements
+        return condition, (tuple(tuple(x) for x in legalActions), nextBoxArrengements)
+    
     def FastInvert(self, posPlayer, action):
         xPlayer, yPlayer = posPlayer # the previous position of player
         newPosPlayer = (xPlayer - action[0], yPlayer - action[1]) # the current position of player
         return newPosPlayer
+    
     def MoveUntilMultipleOptions(self, posPlayer, posBox):
         """
         Moves the player (and boxes if needed) until multiple legal inversion actions are available.
@@ -51,6 +100,7 @@ class InverdedSokobanManager:
             posBox = NewposBox
             iter_count += 1
         return True, posBox, posPlayer
+    
     def aStar(self, beginPlayer, beginBox):
         start_state = (beginPlayer, beginBox)
         frontier = PriorityQueue()
@@ -168,9 +218,8 @@ class InverdedSokobanManager:
         # Start with the initial state as the only leaf.
         leafs = [(posPlayer, posBox)]
         depth = max_depth
+
         while depth > 0:
-            
-            # Expand without pruning if the number of leafs is small.
             if len(leafs) < max_breadth:
                 new_leafs = []
                 for state in leafs:
@@ -211,6 +260,7 @@ class InverdedSokobanManager:
                         new_leafs.append((new_player, new_box))
                 leafs = new_leafs
                 depth -= 1
+            
     def get_longest_solution_from_cache(self):
         worst_state_key = None
         worst_solution = None
