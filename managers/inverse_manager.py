@@ -1,8 +1,7 @@
 
 class InverdedSokobanManager:
-    """
-    Fast Inverse logic
-    """
+    def __init__(self):
+        pass
     def isLegalInversion(self, action, posPlayer, posBox):
         xPlayer, yPlayer = posPlayer
         x1, y1 = xPlayer - action[0], yPlayer - action[1]
