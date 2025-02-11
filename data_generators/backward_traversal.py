@@ -28,7 +28,7 @@ class BackwardTraversal:
             states_solution, action_solution = end_node.statesList(), end_node.trajectory()
             terminal, initialState = states_solution[-1], states_solution[0]
             #final_grid_state = self.inverseManager.initializer(initial_grid=task.initial_state,end_node=end_node)
-            backwards_paths = self.backward_traversal_paths(end_node=end_node,
+            backwards_paths = self.inverseManager.backward_traversal_paths(end_node=end_node,
                                                             initial_grid=task.initial_state,
                                                             max_depth=self.maxDepth,
                                                             max_breadth=self.maxBreadth,)

@@ -62,6 +62,10 @@ class InversedSokobanManager:
     
     def PosOfBoxes(self, grid):
         return tuple(tuple(x) for x in np.argwhere((grid == 3) | (grid == 5)))
+    
+    def isEndState(self,node):
+        '''Check if the position is winner state.'''
+        return sorted(node.state[1]) == sorted(self.posGoals)
         
     def final_state_grid(self, initial_grid, final_player_pos, final_pos_boxes):
         '''Creates the final grid from the initial grid and the final player and box positions.'''
@@ -145,6 +149,39 @@ class InversedSokobanManager:
         newPosPlayer = (xPlayer - action[0], yPlayer - action[1]) # the current position of player
         return newPosPlayer
     
+    
+
+        return worst_state_key, worst_solution, worst_score
+    
+    def backward_traversal_paths(self,end_node,initial_grid,max_depth,max_breadth):
+        '''Generates the backward traversal paths from the end node to the initial node.'''
+        final_grid_state = self.initializer(initial_grid=initial_grid,end_node=end_node)
+
+        self.frontier = deque()
+        self.frontier.append(end_node)
+        self.seen_states = set()
+
+        while len(self.frontier) > 0 and max_depth > 0:
+            if len(self.frontier) < max_breadth:
+                new_frontier = []
+                for node in self.frontier:
+                    if node.state not in self.seen_states:
+                        self.seen_states.add(node.state)
+                        position_player, position_boxes = node.state
+                        bool_condition, legalActions_boxArrengements = self.legalInverts(posPlayer=position_player,posBox=position_boxes) 
+                        legalActions, boxArrengements = legalActions_boxArrengements
+                        if bool_condition:
+                            for action,box_arr in zip(legalActions,boxArrengements):
+                                new_node = Node(state=(self.FastInvert(position_player,action),box_arr),parent=node,action=action)
+                                if not self.isEndState(new_node.state):
+                                    new_frontier.append(new_node)
+                        
+                self.frontier = new_frontier
+
+
+
+
+    ################################################################
     def MoveUntilMultipleOptions(self, posPlayer, posBox):
         """
         Moves the player (and boxes if needed) until multiple legal inversion actions are available.
@@ -344,27 +381,3 @@ class InversedSokobanManager:
 
         if worst_state_key is None:
             return None  # No valid solution found.
-
-        return worst_state_key, worst_solution, worst_score
-    
-    def backward_traversal_paths(self,end_node,initial_grid,max_depth,max_breadth):
-        '''Generates the backward traversal paths from the end node to the initial node.'''
-        final_grid_state = self.initializer(initial_grid=initial_grid,end_node=end_node)
-
-        self.frontier = deque()
-        self.frontier.append(end_node)
-        self.seen_states = set()
-
-        while len(self.frontier) > 0 and max_depth > 0:
-            if len(self.frontier) < max_breadth:
-                new_frontier = []
-                for node in self.frontier:
-                    if node.state not in self.seen_states:
-                        self.seen_states.add(node.state)
-                        position_player, position_boxes = node.state
-                        bool_condition, new_node = self.legalInverts(posPlayer=position_player,posBox=position_boxes) 
-                        if bool_condition:
-                            if self.isEndState(new_node.state):
-                                self.frontier = []
-                                self.seen_states = set()
-                                return new_node
