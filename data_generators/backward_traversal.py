@@ -6,7 +6,7 @@ from managers.inverse_manager import Node
 
 
 class BackwardTraversal:
-    def __init__(self,session=None,model=None,manager=None,maximumDepth=10,maximumBreadth=3,testsPerSearch=None,inverseManager=None):
+    def __init__(self,session=None,model=None,manager=None,maximumDepth=10,maximumBreadth=3,testsPerSearch=None,inverseManager=None, bacthSize = 4, drawSize = 1):
         self.session  = session
         self.model =  model
         self.manager = manager
@@ -14,14 +14,8 @@ class BackwardTraversal:
         self.maxBreadth = maximumBreadth
         self.cadence = testsPerSearch
         self.inverseManager = inverseManager
-    
-    def GenerateProbs(self,values):
-        if not values:
-            return []
-        values = np.array(values, dtype=np.float64)
-        exp_values = np.exp(values - np.max(values)) 
-        probabilities = exp_values / np.sum(exp_values) # Normalize to sum to 1
-        return probabilities.tolist()
+        self.batchSize = bacthSize
+        self.drawSize = drawSize
     
     def generate_examples(self,paths):
         for path in paths:
@@ -45,9 +39,34 @@ class BackwardTraversal:
             print("OK")
             dataset.append(self.generate())
         return dataset
+
+    def GenerateProbs(self,values):
+        if not values:
+            return []
+        values = np.array(values, dtype=np.float64)
+        exp_values = np.exp(values - np.max(values)) 
+        probabilities = exp_values / np.sum(exp_values) # Normalize to sum to 1
+        return probabilities.tolist()
+    
+    def makeBatches(self, nodesList, batchSize):
+        n = len(nodesList)
+        numBatches = n // batchSize
+
+        if n % batchSize != 0:
+            numBatches += 1
+
+        # Randomly shuffle indices to ensure randomness
+        indices = list(range(n))
+        random.shuffle(indices)
+
+        batches = [[] for _ in range(numBatches)]
+        for i, idx in enumerate(indices):
+            batch_index = i % numBatches 
+            batches[batch_index].append(nodesList[idx])
+        return batches
     
     def backward_traversal_paths(self,end_node,initial_grid,max_depth,max_breadth):
-        '''Generates the backward traversal paths from the end node.'''
+        '''Generates the backward traversal paths starting from end node.'''
         final_grid_state = self.inverseManager.initializer(initial_grid=initial_grid,end_node=end_node)
 
         self.frontier = []
@@ -66,9 +85,9 @@ class BackwardTraversal:
                         if bool_condition:
                             for action,box_arr in zip(legalActions,boxArrengements):
                                 new_node = Node(state=(self.inverseManager.FastInvert(position_player,action),box_arr),parent=node,action=action)
-                                if not self.inverseManager.isEndState(new_node.state): #if the state is not the end state then save, whe need to move boxes
+                                if not self.inverseManager.isEndState(new_node): #if the state is not the end state then save, whe need to move boxes
                                     new_frontier.append(new_node)
-                self.depth -= 1
+                self.maxDepth -= 1
                 self.frontier = new_frontier
             else:
                 batches = self.makeBatches(self.frontier, self.batchSize)
