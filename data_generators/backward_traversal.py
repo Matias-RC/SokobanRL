@@ -4,11 +4,12 @@ import random
 
 
 class BackwardTraversal:
-    def __init__(self,session=None,model=None,manager=None,maximumDepth=None,testsPerSearch=None,inverseManager=None):
+    def __init__(self,session=None,model=None,manager=None,maximumDepth=10,maximumBreadth=3,testsPerSearch=None,inverseManager=None):
         self.session  = session
         self.model =  model
         self.manager = manager
         self.maxDepth = maximumDepth
+        self.maxBreadth = maximumBreadth
         self.cadence = testsPerSearch
         self.inverseManager = inverseManager
     
@@ -26,7 +27,11 @@ class BackwardTraversal:
             end_node = task.solution
             states_solution, action_solution = end_node.statesList(), end_node.trajectory()
             terminal, initialState = states_solution[-1], states_solution[0]
-            final_grid_state = self.inverseManager.initializer(initial_grid=task.initial_state,end_node=end_node)
+            #final_grid_state = self.inverseManager.initializer(initial_grid=task.initial_state,end_node=end_node)
+            backwards_paths = self.backward_traversal_paths(end_node=end_node,
+                                                            initial_grid=task.initial_state,
+                                                            max_depth=self.maxDepth,
+                                                            max_breadth=self.maxBreadth,)
             print("OK")
             dataset.append(self.generate())
         return dataset

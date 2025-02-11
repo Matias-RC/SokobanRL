@@ -64,9 +64,7 @@ class InversedSokobanManager:
         return tuple(tuple(x) for x in np.argwhere((grid == 3) | (grid == 5)))
         
     def final_state_grid(self, initial_grid, final_player_pos, final_pos_boxes):
-        
         '''Creates the final grid from the initial grid and the final player and box positions.'''
-
         final_grid = np.copy(initial_grid) #copy
         final_grid[(final_grid == 2) | (final_grid == 3) | (final_grid == 5) | (final_grid == 6)] = 0 #reset
         
@@ -82,6 +80,33 @@ class InversedSokobanManager:
                 final_grid[tuple(box)] = 3  # Normal Box
         
         return final_grid
+    
+    def isFailed(self, posPlayer, posBox):
+        #posPlayer, posBox = node.state
+        """This function used to observe if the state is potentially failed, then prune the search"""
+        rotatePattern = [[0,1,2,3,4,5,6,7,8],
+                        [2,5,8,1,4,7,0,3,6],
+                        [0,1,2,3,4,5,6,7,8][::-1],
+                        [2,5,8,1,4,7,0,3,6][::-1]]
+        flipPattern = [[2,1,0,5,4,3,8,7,6],
+                        [0,3,6,1,4,7,2,5,8],
+                        [2,1,0,5,4,3,8,7,6][::-1],
+                        [0,3,6,1,4,7,2,5,8][::-1]]
+        allPattern = rotatePattern + flipPattern
+
+        for box in posBox:
+            if box not in self.posGoals:
+                board = [(box[0] - 1, box[1] - 1), (box[0] - 1, box[1]), (box[0] - 1, box[1] + 1),
+                        (box[0], box[1] - 1), (box[0], box[1]), (box[0], box[1] + 1),
+                        (box[0] + 1, box[1] - 1), (box[0] + 1, box[1]), (box[0] + 1, box[1] + 1)]
+                for pattern in allPattern:
+                    newBoard = [board[i] for i in pattern]
+                    if newBoard[1] in self.posWalls and newBoard[5] in self.posWalls: return True
+                    elif newBoard[1] in posBox and newBoard[2] in self.posWalls and newBoard[5] in self.posWalls: return True
+                    elif newBoard[1] in posBox and newBoard[2] in self.posWalls and newBoard[5] in posBox: return True
+                    elif newBoard[1] in posBox and newBoard[2] in posBox and newBoard[5] in posBox: return True
+                    elif newBoard[1] in posBox and newBoard[6] in posBox and newBoard[2] in self.posWalls and newBoard[3] in self.posWalls and newBoard[8] in self.posWalls: return True
+        return False
 
 
     
@@ -107,7 +132,7 @@ class InversedSokobanManager:
             # Convert back to tuple
             temp_boxes = tuple(temp_boxes)
 
-            if self.isLegalInversion(action, posPlayer, posBox) and not self.isEndState(temp_boxes):
+            if self.isLegalInversion(action, posPlayer, posBox) and not self.isFailed(posPlayer=(x1,y1),posBox=temp_boxes): #self.isEndState(temp_boxes):
                 legalActions.append(action)
                 nextBoxArrengements.append(temp_boxes)
         
@@ -321,3 +346,25 @@ class InversedSokobanManager:
             return None  # No valid solution found.
 
         return worst_state_key, worst_solution, worst_score
+    
+    def backward_traversal_paths(self,end_node,initial_grid,max_depth,max_breadth):
+        '''Generates the backward traversal paths from the end node to the initial node.'''
+        final_grid_state = self.initializer(initial_grid=initial_grid,end_node=end_node)
+
+        self.frontier = deque()
+        self.frontier.append(end_node)
+        self.seen_states = set()
+
+        while len(self.frontier) > 0 and max_depth > 0:
+            if len(self.frontier) < max_breadth:
+                new_frontier = []
+                for node in self.frontier:
+                    if node.state not in self.seen_states:
+                        self.seen_states.add(node.state)
+                        position_player, position_boxes = node.state
+                        bool_condition, new_node = self.legalInverts(posPlayer=position_player,posBox=position_boxes) 
+                        if bool_condition:
+                            if self.isEndState(new_node.state):
+                                self.frontier = []
+                                self.seen_states = set()
+                                return new_node
