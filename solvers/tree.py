@@ -47,6 +47,8 @@ class MonteCarloTreeSearch:
         return batches
     
     def do(self,task,q_function):
+        '''Generate a solution (trayectory) for a task using the MCTS algorithm'''
+
         node = self.manager.initializer(task.initial_state)
         self.frontier.append(node)
         depth = self.max_depth
@@ -80,9 +82,9 @@ class MonteCarloTreeSearch:
                         selected_nodes.append(batch[idx])
                         
                 self.frontier = selected_nodes
-                depth -= 1
+                
         self.seen_states = set()
-        
+
     def do_first_session(self,task,q_function):
         pass
     

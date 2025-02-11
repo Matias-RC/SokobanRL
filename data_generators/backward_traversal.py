@@ -15,9 +15,11 @@ class BackwardTraversal:
         
     def do(self, session, model):
         dataset = []
-        for i in session:
-            terminal, initialState = i
-            self.manager.initializer(initialState)
+        for task in session: #recall a session is a set of tasks
+            end_node = task.solution
+            states_solution, action_solution = end_node.statesList(), end_node.trajectory()
+            terminal, initialState = states_solution[-1], states_solution[0]
+            #self.manager.initializer(initialState)
             self.inverseManager.initializer(initialState, terminal)
             dataset.append(self.generate())
         return dataset

@@ -32,7 +32,7 @@ class Agent:
         
         for task in session:
             
-            solution = self.solve(task)
+            solution = self.solve(task) #solution is a node
 
             task.add(solution)
 
@@ -40,16 +40,18 @@ class Agent:
                 print(solution.trajectory())
             else:
                 print("X")
+        
+        return session
 
 
     def sleep(self):
-
+        self.dreaming()
         self.abstraction()
         # self.dreaming()       
 
     def solve(self, task):
 
-        return self.solver.do(task,self.q_net)
+        return self.solver.do(task,self.q_net) #return a solution
 
     def abstraction(self):
 
