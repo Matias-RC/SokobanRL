@@ -1,5 +1,5 @@
 
-class InversedLogic:
+class InverdedSokobanManager:
     """
     Fast Inverse logic
     """
