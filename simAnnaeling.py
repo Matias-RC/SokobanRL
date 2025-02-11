@@ -299,12 +299,10 @@ def simulated_annealing_trajectory(initial_solution,grid,manager,move_library,al
                 quality_delta = alternative_quality - candidate_quality
                 acceptance_probability = math.exp(-quality_delta / temperature)
                 if random.random() < acceptance_probability:
-                    print("Accepting alternative")
                     candidate_pool.append(alternative)
             trajectories_cache.append(alternative)
         
         temperature *= cooling_rate
-        print(candidate_pool)
         break
     
     return trajectories_cache, annealing_data
