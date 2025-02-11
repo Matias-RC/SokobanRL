@@ -116,5 +116,5 @@ class SokobanManager:
     def initializer(self,initial_state):
         self.posWalls = self.PosOfWalls(initial_state)
         self.posGoals = self.PosOfGoals(initial_state)
-        node = Node(state=(self.PosOfPlayer(initial_state), self.PosOfBoxes(initial_state)), goals=self.posGoals)
+        node = Node(state=(self.PosOfPlayer(initial_state), self.PosOfBoxes(initial_state)), goals=self.PosOfGoals(initial_state))
         return node

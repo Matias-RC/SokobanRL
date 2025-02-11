@@ -6,11 +6,16 @@ from trainers.dpra import DPRA
 from data_generators.backward_traversal import BackwardTraversal
 from trainers.dpra import DPRA
 
+from managers.inverse_manager import InversedSokobanManager
+from managers.sokoban_manager import SokobanManager
+
+
 class Fantasizer:
     def __init__(self, data_generator, trainer):
         
         if data_generator == "backward_traversal":
-            self.data_generator = BackwardTraversal()
+            self.data_generator = BackwardTraversal(inverseManager=InversedSokobanManager(),
+                                                    manager=SokobanManager())
 
         if trainer == "dpra":
             self.trainer = DPRA()
