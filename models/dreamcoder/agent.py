@@ -1,6 +1,6 @@
 from solvers.tree import MonteCarloTreeSearch
 from abstractors.bayesian import Decompiling
-from simAnnaeling import kOpt
+#from simAnnaeling import kOpt
 from data.task import Task
 from dreamers.dreamer import Dreamer
 

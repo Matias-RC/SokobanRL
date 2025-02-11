@@ -6,11 +6,10 @@ from data.task import Task
 from data.env_objects.sokoban_scenario import Scenario
 from learning.curriculum import Curriculum
 from models.dreamcoder.q_uniform import q_uniform
-from DeepQNetwork.models.mlp import DQN
 from managers.sokoban_manager import SokobanManager
 
-NUM_TASKS = 20
-GRID_SIZE = 4
+NUM_TASKS = 3
+GRID_SIZE = 6
 
 actions_for_sokoban = [
     [(-1, 0)],  # 'w' (UP)
@@ -21,7 +20,7 @@ actions_for_sokoban = [
 
 scenarios = [ Scenario(width=GRID_SIZE, height=GRID_SIZE) for _ in range(NUM_TASKS)] #room
 
-print("Scenarios:", scenarios)
+#print("Scenarios:", scenarios)
 
 session_1 = [
     Task(

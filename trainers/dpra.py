@@ -5,7 +5,7 @@ import torch.optim as optim
 import numpy as np
 from collections import defaultdict
 import random
-from data_generators.collate_fn import collate_fn
+#from data_generators.collate_fn import collate_fn
 from torch.utils.data import Dataset, DataLoader
 
 # DeepPairwiseRankAggregation
@@ -18,16 +18,16 @@ class DPRA:
         self.epochs = 100
         self.batch_size = 32
         self.device = torch.device(device if torch.cuda.is_available() else "cpu")
-        self.collate_fn = collate_fn
+        #self.collate_fn = collate_fn
 
     def do(self, dataset, model):
 
         learner = model.get_learner()
         learner.is_training = True
 
-        dataloader = DataLoader(dataset,
-                                shuffle = True,
-                                collate_fn=self.collate_fn)
+        #dataloader = DataLoader(dataset,
+        #                        shuffle = True,
+        #                        collate_fn=self.collate_fn)
         
         self.fit(dataset, learner)
 

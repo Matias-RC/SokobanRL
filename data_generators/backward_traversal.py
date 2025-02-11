@@ -3,7 +3,7 @@ import numpy as np
 
 
 class BackwardTraversal:
-    def __init__(self, session, model, manager, maximumDepth, testsPerSearch, inverseManager):
+    def __init__(self,session=None,model=None,manager=None,maximumDepth=None,testsPerSearch=None,inverseManager=None):
         self.session  = session
         self.model =  model
         self.manager = manager
