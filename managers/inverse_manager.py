@@ -45,10 +45,46 @@ class InversedSokobanManager:
         self.posWalls = None
         self.posGoals = None
 
-    def initializer(self, initialState, terminalState):
-        ''' Initializes the manager with the initial and terminal states. '''
-        
+    def initializer(self,initial_grid, end_node):
+        '''Iniatilizes the manager with the final grid.'''
+        self.posWalls = self.PosOfWalls(initial_grid)
+        self.posGoals = self.PosOfGoals(initial_grid)
+        end_state = end_node.state
+        final_player_pos, final_pos_boxes = end_state[0], end_state[1]
+        final_grid = self.final_state_grid(initial_grid, final_player_pos, final_pos_boxes)
+        return final_grid
+    
+    def PosOfWalls(self, grid):
+        return tuple(tuple(x) for x in np.argwhere(grid == 1))
 
+    def PosOfGoals(self, grid):
+        return tuple(tuple(x) for x in np.argwhere((grid == 4) | (grid == 5) | (grid == 6)))
+    
+    def PosOfBoxes(self, grid):
+        return tuple(tuple(x) for x in np.argwhere((grid == 3) | (grid == 5)))
+        
+    def final_state_grid(self, initial_grid, final_player_pos, final_pos_boxes):
+        
+        '''Creates the final grid from the initial grid and the final player and box positions.'''
+
+        final_grid = np.copy(initial_grid) #copy
+        final_grid[(final_grid == 2) | (final_grid == 3) | (final_grid == 5) | (final_grid == 6)] = 0 #reset
+        
+        if tuple(final_player_pos) in self.posGoals:
+            final_grid[tuple(final_player_pos)] = 6  # Player on Button
+        else:
+            final_grid[tuple(final_player_pos)] = 2  # Normal Player
+        
+        for box in final_pos_boxes:
+            if tuple(box) in self.posGoals:
+                final_grid[tuple(box)] = 5  # Box on Button
+            else:
+                final_grid[tuple(box)] = 3  # Normal Box
+        
+        return final_grid
+
+
+    
     def isLegalInversion(self, action, posPlayer, posBox): 
         xPlayer, yPlayer = posPlayer
         x1, y1 = xPlayer - action[0], yPlayer - action[1]
