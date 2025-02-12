@@ -1,12 +1,40 @@
-from torch.utils.data import Dataset, DataLoader
+import torch
+from torch.utils.data import Dataset
 import numpy as np
 import random
-from managers.inverse_manager import InversedSokobanManager
-from managers.inverse_manager import Node
+from managers.inverse_manager import InvertedNode
+
+
+
+
+class BackwardTraversalDataset(Dataset):
+    def __init__(self, dataset,one_batch = True):
+        
+        if one_batch:
+            self.dataset = [example for example in dataset]
+        else:
+            self.dataset = [example for batch in dataset for example in batch]
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+
+        game_grid, start_state, sub_path_actions, end_state, probability = self.dataset[idx]
+
+        game_grid_tensor = torch.tensor(game_grid, dtype=torch.float32)  
+        start_state_tensor = torch.tensor(start_state, dtype=torch.float32)
+        sub_path_actions_tensor = torch.tensor(sub_path_actions, dtype=torch.long)  
+        end_state_tensor = torch.tensor(end_state, dtype=torch.float32)
+        probability_tensor = torch.tensor(probability, dtype=torch.float32)
+
+        return game_grid_tensor, start_state_tensor, sub_path_actions_tensor, end_state_tensor, probability_tensor
+
+
 
 
 class BackwardTraversal:
-    def __init__(self,session=None,model=None,manager=None,maximumDepth=10,maximumBreadth=3,testsPerSearch=None,inverseManager=None, bacthSize = 4, drawSize = 1):
+    def __init__(self,session=None,model=None,manager=None,maximumDepth=4,maximumBreadth=10,testsPerSearch=None,inverseManager=None, bacthSize = 4, drawSize = 2):
         self.session  = session
         self.model =  model
         self.manager = manager
@@ -16,29 +44,61 @@ class BackwardTraversal:
         self.inverseManager = inverseManager
         self.batchSize = bacthSize
         self.drawSize = drawSize
-    
-    def generate_examples(self,paths):
-        for path in paths:
-            #select random initial and terminal nodes
-            init_node = random.choice(path)
-            term_node = random.choice(path[init_node.pos:])
-            example = (init_node,term_node,init_node.trajectory(term_node)) #nodes and actions
-        batch = []
-        
+        self.datasets = []
+
     def do(self, session, model):
-        dataset = []
+
         for task in session: #recall a session is a set of tasks
             end_node = task.solution
             states_solution, action_solution = end_node.statesList(), end_node.trajectory()
             terminal, initialState = states_solution[-1], states_solution[0]
             #final_grid_state = self.inverseManager.initializer(initial_grid=task.initial_state,end_node=end_node)
             backwards_paths = self.backward_traversal_paths(end_node=end_node,
-                                                            initial_grid=task.initial_state,
-                                                            max_depth=self.maxDepth,
-                                                            max_breadth=self.maxBreadth,)
-            print("OK")
-            dataset.append(self.generate())
-        return dataset
+                                                            initial_grid=task.initial_state,)
+            
+            for initial_node_path in backwards_paths:
+                batch = self.generate_examples(initial_node_path,task=task)
+                batch_dataset_torch = BackwardTraversalDataset(batch,one_batch=True)
+                self.datasets.append(batch_dataset_torch)
+        
+        return self.datasets
+    
+    def generate_examples(self,initial_node_path,task,n_examples=5):
+
+        batch = []
+        for _ in range(n_examples):
+            nodes_path = initial_node_path.nodesList()
+            complete_path = initial_node_path.statesList()
+            actions_path = initial_node_path.trajectory()[0:-1] #inversed_actions
+            positions_path = range(len(complete_path)) #ranking from 0 to len of the path
+            rnd_path_indexes = self.get_random_subpath(positions_path)
+
+            start_state, end_state = complete_path[rnd_path_indexes[0]],complete_path[rnd_path_indexes[-1]]
+            sub_path_actions = [actions_path[k] for k in rnd_path_indexes][0:-1]
+            subpath_end_node = nodes_path[rnd_path_indexes[-1]]
+
+            all_paths = self.backward_traversal_all_paths(end_node=subpath_end_node,
+                                                            initial_grid=task.initial_state, #map, it does not matter if is the iniital map or the final map
+                                                            seen_states=[complete_path[k] for k in rnd_path_indexes][0:-1],
+                                                            max_depth=len(rnd_path_indexes),
+                                                            max_breadth=10000000000000000000)
+
+            game_grid = self.inverseManager.final_state_grid(initial_grid = task.initial_state,
+                                                        final_player_pos=start_state[0],
+                                                        final_pos_boxes=start_state[1])
+
+            example = (game_grid,start_state,sub_path_actions,end_state, 1/len(all_paths) ) #map, start_state, actions, end_state, probability
+            batch.append(example)
+        return batch
+        
+    
+    def get_random_subpath(self, indexes_path):
+        path_length = len(indexes_path)
+        subpath_len = random.randint(2, path_length)  
+
+        start_idx = random.randint(0, path_length - subpath_len)
+        subpath_indexes = indexes_path[start_idx : (start_idx + subpath_len)]
+        return subpath_indexes
 
     def GenerateProbs(self,values):
         if not values:
@@ -65,16 +125,16 @@ class BackwardTraversal:
             batches[batch_index].append(nodesList[idx])
         return batches
     
-    def backward_traversal_paths(self,end_node,initial_grid,max_depth,max_breadth):
+    def backward_traversal_paths(self,end_node,initial_grid):
         '''Generates the backward traversal paths starting from end node.'''
         final_grid_state = self.inverseManager.initializer(initial_grid=initial_grid,end_node=end_node)
-
+        end_node = InvertedNode(state=end_node.state,parent=None,action=None,inversed_action=None,rank=0)
         self.frontier = []
         self.frontier.append(end_node)
         self.seen_states = set()
 
-        while len(self.frontier) > 0 and max_depth > 0:
-            if len(self.frontier) < max_breadth:
+        while len(self.frontier) > 0 and self.maxDepth > 0:
+            if len(self.frontier) < self.maxBreadth:
                 new_frontier = []
                 for node in self.frontier:
                     if node.state not in self.seen_states:
@@ -84,7 +144,12 @@ class BackwardTraversal:
                         legalActions, boxArrengements = legalActions_boxArrengements
                         if bool_condition:
                             for action,box_arr in zip(legalActions,boxArrengements):
-                                new_node = Node(state=(self.inverseManager.FastInvert(position_player,action),box_arr),parent=node,action=action)
+                                inversed_action = (-action[0], -action[1])
+                                new_node = InvertedNode(state=(self.inverseManager.FastInvert(position_player,action),box_arr),
+                                                        parent=node,
+                                                        action=action,
+                                                        inversed_action=inversed_action,
+                                                        rank=node.rank-1)
                                 if not self.inverseManager.isEndState(new_node): #if the state is not the end state then save, whe need to move boxes
                                     new_frontier.append(new_node)
                 self.maxDepth -= 1
@@ -100,6 +165,50 @@ class BackwardTraversal:
                     selected_indices = random.choices(range(len(batch)), weights=probs, k=self.drawSize)
                     for idx in selected_indices:
                         selected_nodes.append(batch[idx])
-                        
+                
                 self.frontier = selected_nodes
-        print("OK")
+
+        print("Number of paths:",len(self.frontier))
+        return self.frontier
+    
+
+    def backward_traversal_all_paths(self,end_node,initial_grid,seen_states,max_depth,max_breadth=1000000000):
+        '''Generates all possible backward traversal paths starting from end node.'''
+        
+        final_grid_state = self.inverseManager.initializer(initial_grid=initial_grid,end_node=end_node)
+        end_node = InvertedNode(state=end_node.state,parent=None,action=None,inversed_action=None,rank=0)
+        frontier = []
+        frontier.append(end_node)
+                
+        seen_states = set()
+        for state in seen_states:
+            seen_states.add(state)
+
+        while len(self.frontier) > 0 and max_depth > 0:
+            if len(self.frontier) < max_breadth:
+
+                new_frontier = []
+                
+                for node in frontier:
+                    if node.state not in seen_states:
+                        seen_states.add(node.state)
+                        position_player, position_boxes = node.state
+                        bool_condition, legalActions_boxArrengements = self.inverseManager.legalInverts(posPlayer=position_player,
+                                                                                                        posBox=position_boxes) 
+                        legalActions, boxArrengements = legalActions_boxArrengements
+                        if bool_condition:
+                            for action,box_arr in zip(legalActions,boxArrengements):
+                                inversed_action = (-action[0], -action[1])
+                                new_node = InvertedNode(state=(self.inverseManager.FastInvert(position_player,action),box_arr),
+                                                        parent=node,
+                                                        action=action,
+                                                        inversed_action=inversed_action,
+                                                        rank=node.rank-1)
+                                
+                                if not self.inverseManager.isEndState(new_node): #if the state is not the end state then save, whe need to move boxes
+                                    new_frontier.append(new_node)
+                max_depth -= 1
+                frontier = new_frontier
+
+        print("Number of paths:",len(self.frontier))
+        return frontier #self.frontier

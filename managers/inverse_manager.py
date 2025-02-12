@@ -8,35 +8,46 @@ from typing import Any, Optional, List
 
 
 @dataclass
-class Node:
+class InvertedNode:
     ''' Data structure for a node in the search tree. '''
     state: Any
-    parent: Optional['Node'] = None
+    parent: Optional['InvertedNode'] = None
     action: Optional[Any] = None
+    inversed_action: Optional[Any] = None
+    rank: int = 0
 
-    def trajectory(self) -> List['Node']:
+    def trajectory(self) -> List['InvertedNode']:
         node, path = self, []
 
         while node:
             path.append(node.action)
             node = node.parent
             
-        return list(reversed(path))[1:]
+        return list(path)#[1:]
     
-    def statesList(self) -> List['Node']:
+    def statesList(self) -> List['InvertedNode']:
         node, path = self, []
 
         while node:
             path.append(node.state)
             node = node.parent
-        return list(reversed(path))
+        return list(path)
     
-    def nodesList(self) -> List['Node']:
+    def nodesList(self) -> List['InvertedNode']:
         node, path = self, []
         while node:
             path.append(node)
             node = node.parent
-        return list(reversed(path))
+        return list(path)
+    
+    def inversed_trajectory(self) -> List['InvertedNode']:
+        node, path = self, []
+
+        while node:
+            path.append(node.inversed_action)
+            node = node.parent
+            
+        return list(path)
 
 
 class InversedSokobanManager:
@@ -171,7 +182,7 @@ class InversedSokobanManager:
             posBox = NewposBox
             iter_count += 1
         return True, posBox, posPlayer
-    
+    '''
     def aStar(self, beginPlayer, beginBox):
         start_state = (beginPlayer, beginBox)
         frontier = PriorityQueue()
@@ -349,3 +360,4 @@ class InversedSokobanManager:
 
         if worst_state_key is None:
             return None  # No valid solution found.
+'''
