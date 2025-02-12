@@ -55,15 +55,6 @@ class InversedSokobanManager:
     def __init__(self):
         self.posWalls = None
         self.posGoals = None
-
-    def initializer(self,initial_grid, end_node):
-        '''Iniatilizes the manager with the final grid.'''
-        self.posWalls = self.PosOfWalls(initial_grid)
-        self.posGoals = self.PosOfGoals(initial_grid)
-        end_state = end_node.state
-        final_player_pos, final_pos_boxes = end_state[0], end_state[1]
-        final_grid = self.final_state_grid(initial_grid, final_player_pos, final_pos_boxes)
-        return final_grid
     
     def PosOfWalls(self, grid):
         return tuple(tuple(x) for x in np.argwhere(grid == 1))
@@ -95,71 +86,51 @@ class InversedSokobanManager:
                 final_grid[tuple(box)] = 3  # Normal Box
         
         return final_grid
-    
+    """
     def isFailed(self, posPlayer, posBox):
-        #posPlayer, posBox = node.state
-        """This function used to observe if the state is potentially failed, then prune the search"""
-        rotatePattern = [[0,1,2,3,4,5,6,7,8],
-                        [2,5,8,1,4,7,0,3,6],
-                        [0,1,2,3,4,5,6,7,8][::-1],
-                        [2,5,8,1,4,7,0,3,6][::-1]]
-        flipPattern = [[2,1,0,5,4,3,8,7,6],
-                        [0,3,6,1,4,7,2,5,8],
-                        [2,1,0,5,4,3,8,7,6][::-1],
-                        [0,3,6,1,4,7,2,5,8][::-1]]
-        allPattern = rotatePattern + flipPattern
-
-        for box in posBox:
-            if box not in self.posGoals:
-                board = [(box[0] - 1, box[1] - 1), (box[0] - 1, box[1]), (box[0] - 1, box[1] + 1),
-                        (box[0], box[1] - 1), (box[0], box[1]), (box[0], box[1] + 1),
-                        (box[0] + 1, box[1] - 1), (box[0] + 1, box[1]), (box[0] + 1, box[1] + 1)]
-                for pattern in allPattern:
-                    newBoard = [board[i] for i in pattern]
-                    if newBoard[1] in self.posWalls and newBoard[5] in self.posWalls: return True
-                    elif newBoard[1] in posBox and newBoard[2] in self.posWalls and newBoard[5] in self.posWalls: return True
-                    elif newBoard[1] in posBox and newBoard[2] in self.posWalls and newBoard[5] in posBox: return True
-                    elif newBoard[1] in posBox and newBoard[2] in posBox and newBoard[5] in posBox: return True
-                    elif newBoard[1] in posBox and newBoard[6] in posBox and newBoard[2] in self.posWalls and newBoard[3] in self.posWalls and newBoard[8] in self.posWalls: return True
-        return False
-
-
-    
+    -> we don't need this function due to the nature of the inversed path.
+    """
     def isLegalInversion(self, action, posPlayer, posBox): 
         xPlayer, yPlayer = posPlayer
         x1, y1 = xPlayer - action[0], yPlayer - action[1]
         return (x1, y1) not in posBox + self.posWalls
     
-    def legalInverts(self, posPlayer, posBox):
-        ''' Returns the legal inversion moves for the player and boxes. '''
-        allActions = [(-1,0), (0,-1), (1,0), (0,1)]
-        xPlayer, yPlayer = posPlayer
-        legalActions = []
-        nextBoxArrengements = []
+    def legalInvertedUpdate(self, macro, game_data, node):
+        player, posBoxes = game_data
+        boxes = set(posBoxes)
 
-        for action in allActions:
-            x1, y1 = xPlayer + action[0], yPlayer + action[1]
-            # Convert tuple to list for modification
-            temp_boxes = list(posBox)  
+        for dx, dy in macro:
+            new_player = (player[0] - dx, player[1] - dy)
 
-            temp_boxes = [(xPlayer, yPlayer) if i == (x1, y1) else i for i in temp_boxes]
+            if new_player in self.posWalls:
+                return False, None
 
-            # Convert back to tuple
-            temp_boxes = tuple(temp_boxes)
+            # Determine if a pull move should occur:
+            pull_candidate = (player[0] + dx, player[1] + dy)
+            pull = pull_candidate in boxes
 
-            if self.isLegalInversion(action, posPlayer, posBox) and not self.isFailed(posPlayer=(x1,y1),posBox=temp_boxes): #self.isEndState(temp_boxes):
-                legalActions.append(action)
-                nextBoxArrengements.append(temp_boxes)
-        
-        condition = len(legalActions) > 0
-                
-        return condition, (tuple(tuple(x) for x in legalActions), nextBoxArrengements)
+            if not self.isLegalInversion((dx, dy), player, tuple(boxes)):
+                return False, None
+
+            if pull:
+                boxes.remove(pull_candidate)
+                boxes.add(player)
+
+            player = new_player
+
+        new_state = (player, tuple(boxes))
+
+        new_node = InvertedNode(state=new_state, parent=node, action=macro)
+        return True, new_node
     
-    def FastInvert(self, posPlayer, action):
-        xPlayer, yPlayer = posPlayer # the previous position of player
-        newPosPlayer = (xPlayer - action[0], yPlayer - action[1]) # the current position of player
-        return newPosPlayer
-    
+    def initializer(self,initial_grid, end_node):
+        '''Iniatilizes the manager with the final grid.'''
+        self.posWalls = self.PosOfWalls(initial_grid)
+        self.posGoals = self.PosOfGoals(initial_grid)
+        end_state = end_node.state
+        final_player_pos, final_pos_boxes = end_state[0], end_state[1]
+        final_grid = self.final_state_grid(initial_grid, final_player_pos, final_pos_boxes)
+        return final_grid
     ################################################################
     def MoveUntilMultipleOptions(self, posPlayer, posBox):
         """
