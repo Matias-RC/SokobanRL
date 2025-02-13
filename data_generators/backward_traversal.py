@@ -9,26 +9,35 @@ from managers.inverse_manager import InvertedNode
 
 class BackwardTraversalDataset(Dataset):
     def __init__(self, dataset,one_batch = True):
-        
+        """
+        Args:
+            dataset (list): List of batches
+            batch (list): List of tuples of the form (grid, rank)
+            one_batch (bool): If True, the dataset is a single batch
+        Output:
+            A dataset of the form (grid, rank) as torch tensors
+        """
         if one_batch:
-            self.dataset = [example for example in dataset]
+            batch = dataset[0]
+            for example in batch:
+                grid, rank = example
+                grid = torch.tensor(grid, dtype=torch.float32)
+                rank = torch.tensor(rank, dtype=torch.float32)
+                self.dataset.append((grid, rank))
         else:
-            self.dataset = [example for batch in dataset for example in batch]
+            for batch in dataset:
+                for example in batch:
+                    grid, rank = example
+                    grid = torch.tensor(grid, dtype=torch.float32)
+                    rank = torch.tensor(rank, dtype=torch.float32)
+                    self.dataset.append((grid, rank))
+
 
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-
-        game_grid, start_state, sub_path_actions, end_state, probability = self.dataset[idx]
-
-        game_grid_tensor = torch.tensor(game_grid, dtype=torch.float32)  
-        start_state_tensor = torch.tensor(start_state, dtype=torch.float32)
-        sub_path_actions_tensor = torch.tensor(sub_path_actions, dtype=torch.long)  
-        end_state_tensor = torch.tensor(end_state, dtype=torch.float32)
-        probability_tensor = torch.tensor(probability, dtype=torch.float32)
-
-        return game_grid_tensor, start_state_tensor, sub_path_actions_tensor, end_state_tensor, probability_tensor
+        return self.dataset[idx]
 
 
 
@@ -63,67 +72,34 @@ class BackwardTraversal:
                 self.datasets.append(batch_dataset_torch)
         
         return self.datasets
-    
-    """
-    def generate_examples(self,initial_node_path,task,n_examples=5):
 
-        batch = []
-        for _ in range(n_examples):
-            nodes_path = initial_node_path.nodesList()
-            complete_path = initial_node_path.statesList()
-            actions_path = initial_node_path.trajectory()#[0:-1] #inversed_actions
-            positions_path = range(len(complete_path)) #ranking from 0 to len of the path
-            rnd_path_indexes = self.get_random_subpath(positions_path)
-
-            start_state, end_state = complete_path[rnd_path_indexes[0]],complete_path[rnd_path_indexes[-1]]
-            sub_path_actions = [actions_path[k] for k in rnd_path_indexes]#[0:-1]
-            subpath_end_node = nodes_path[rnd_path_indexes[-1]]
-
-            all_paths = self.backward_traversal_all_paths(end_node=subpath_end_node,
-                                                            initial_grid=task.initial_state, #map, it does not matter if is the iniital map or the final map
-                                                            max_depth=len(rnd_path_indexes),
-                                                            max_breadth=10000000000000000000)
-
-            game_grid = self.inverseManager.final_state_grid(initial_grid = task.initial_state,
-                                                        final_player_pos=start_state[0],
-                                                        final_pos_boxes=start_state[1])
-
-            example = (game_grid,start_state,sub_path_actions,end_state, 1/len(all_paths) ) #map, start_state, actions, end_state, probability
-            batch.append(example)
-        return batch
-    """
-    def generate_batch(self,initial_node_path,task,n_examples=5, max_depth=8):
+    def generate_batch(self,initial_node_path,task, max_depth=8):
         """
         Different from generate_examples, this function creates a batch of examples from the terminal node
         you retrieve all paths that have a ceratin depth l and then make the batch
         Returns:
-            A batch of examples where each   example is  a pair all_paths[i].state, all_paths[i].parent.state
-        """
+            A batch of tuples with the following structure: (grid rank)
+        """ 
         batch = []
-        nodes_path = initial_node_path.nodesList()
-        complete_path = initial_node_path.statesList()
-        actions_path = initial_node_path.trajectory()
 
-        all_paths = self.backward_traversal_all_paths(end_node=initial_node_path,
-                                                        initial_grid=task.initial_state,
-                                                        max_depth=max_depth,
-                                                        max_breadth=10000000000000000000)
-        #Want to create a batch of  (parent, parent_grid, [children], [children_grid])
-        node_parents = set()
-        for node in all_paths:
-            if node.parent is not None:
-                node_parents.add(node.parent)
-        for node in node_parents:
-            game_grid = self.inverseManager.final_state_grid(initial_grid = task.initial_state,
-                                                        final_player_pos=node.state[0],
-                                                        final_pos_boxes=node.state[1])
-            children = [child for child in node.children]
-            children_grid = [self.inverseManager.final_state_grid(initial_grid = task.initial_state,
-                                                        final_player_pos=child.state[0],
-                                                        final_pos_boxes=child.state[1]) for child in children]
-            example = (game_grid, node.state, children, children_grid)
-            batch.append(example)
-        return batch     
+        frontier, end_node = self.backward_traversal_all_paths(macros=self.manager.macros,
+                                                                end_node=initial_node_path,
+                                                                initial_grid=task.initial_state,
+                                                                max_depth=max_depth,
+                                                                max_breadth=self.maxBreadth)
+        # end_node has children and the children have children and so on.  We want to make the batch from all the children contained in end_node
+        childs = end_node.children
+        while childs:
+            new_childs = []
+            for node in childs:
+                game_grid = self.inverseManager.final_state_grid(initial_grid = task.initial_state,
+                                                                final_player_pos=node.state[0],
+                                                                final_pos_boxes=node.state[1])
+                example = (game_grid,node.rank)
+                batch.append(example)   
+                if node.children:
+                    new_childs.extend(node.children)
+            childs = new_childs
 
 
 
@@ -230,21 +206,30 @@ class BackwardTraversal:
         print("Number of paths:",len(self.frontier))
         return frontier, end_node #self.frontier
     
-    def frontier_expand(self,frontier, macros):
-        '''Expands the frontier nodes to the next possible states.'''
-        new_frontier = []
-        for node in frontier:
-            position_player, position_boxes = node.state
-            for m in macros:
-                condition, new_node = self.inverseManager.legalInvertedUpdate(macro=m,
-                                                                            game_data=(position_player,position_boxes),
-                                                                            node=node)
-                if condition:
-                    new_frontier.append(new_node)
-        return new_frontier
-    
-    def procedural_batch(self,initial_node_path,task,n_examples=5, max_depth=8, max_breadth=100000):
-        """
-        Across our depth from max to 0 we tag the elements of the  frontier
-        That is the number of times
-        """
+
+
+
+
+"""
+    def generate_examples(self,initial_node_path,task,n_examples=5):
+    batch = []
+    for _ in range(n_examples):
+        nodes_path = initial_node_path.nodesList()
+        complete_path = initial_node_path.statesList()
+        actions_path = initial_node_path.trajectory()#[0:-1] #inversed_actions
+        positions_path = range(len(complete_path)) #ranking from 0 to len of the path
+        rnd_path_indexes = self.get_random_subpath(positions_path)
+        start_state, end_state = complete_path[rnd_path_indexes[0]],complete_path[rnd_path_indexes[-1]]
+        sub_path_actions = [actions_path[k] for k in rnd_path_indexes]#[0:-1]
+        subpath_end_node = nodes_path[rnd_path_indexes[-1]]
+        all_paths = self.backward_traversal_all_paths(end_node=subpath_end_node,
+                                                        initial_grid=task.initial_state, #map, it does not matter if is the iniital map or the final map
+                                                        max_depth=len(rnd_path_indexes),
+                                                        max_breadth=10000000000000000000)
+        game_grid = self.inverseManager.final_state_grid(initial_grid = task.initial_state,
+                                                    final_player_pos=start_state[0],
+                                                    final_pos_boxes=start_state[1])
+        example = (game_grid,start_state,sub_path_actions,end_state, 1/len(all_paths) ) #map, start_state, actions, end_state, probability
+        batch.append(example)
+    return batch
+"""
