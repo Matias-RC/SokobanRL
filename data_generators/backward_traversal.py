@@ -58,12 +58,12 @@ class BackwardTraversal:
                                                             initial_grid=task.initial_state,)
             
             for initial_node_path in backwards_paths:
-                batch = self.generate_examples(initial_node_path,task=task)
+                batch = self.generate_batch(initial_node_path,task=task)
                 batch_dataset_torch = BackwardTraversalDataset(batch,one_batch=True)
                 self.datasets.append(batch_dataset_torch)
         
         return self.datasets
-    
+    """
     def generate_examples(self,initial_node_path,task,n_examples=5):
 
         batch = []
@@ -90,7 +90,7 @@ class BackwardTraversal:
             example = (game_grid,start_state,sub_path_actions,end_state, 1/len(all_paths) ) #map, start_state, actions, end_state, probability
             batch.append(example)
         return batch
-    
+    """
     def generate_batch(self,initial_node_path,task,n_examples=5, max_depth=8):
         """
         Different from generate_examples, this function creates a batch of examples from the terminal node
@@ -108,11 +108,21 @@ class BackwardTraversal:
                                                         max_depth=max_depth,
                                                         max_breadth=10000000000000000000)
         #Want to create a batch of  (parent, parent_grid, [children], [children_grid])
-
-
-            
-            
-            
+        node_parents = set()
+        for node in all_paths:
+            if node.parent is not None:
+                node_parents.add(node.parent)
+        for node in node_parents:
+            game_grid = self.inverseManager.final_state_grid(initial_grid = task.initial_state,
+                                                        final_player_pos=node.state[0],
+                                                        final_pos_boxes=node.state[1])
+            children = [child for child in node.children]
+            children_grid = [self.inverseManager.final_state_grid(initial_grid = task.initial_state,
+                                                        final_player_pos=child.state[0],
+                                                        final_pos_boxes=child.state[1]) for child in children]
+            example = (game_grid, node.state, children, children_grid)
+            batch.append(example)
+        return batch     
 
 
 
