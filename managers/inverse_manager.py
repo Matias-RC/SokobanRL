@@ -74,16 +74,16 @@ class InversedSokobanManager:
         final_grid = np.copy(initial_grid) #copy
         final_grid[(final_grid == 2) | (final_grid == 3) | (final_grid == 5) | (final_grid == 6)] = 0 #reset
         
-        if tuple(final_player_pos) in self.posGoals:
-            final_grid[tuple(final_player_pos)] = 6  # Player on Button
+        if final_player_pos in self.posGoals:
+            final_grid[final_player_pos] = 6  # Player on Button
         else:
-            final_grid[tuple(final_player_pos)] = 2  # Normal Player
-        
-        for box in final_pos_boxes:
-            if tuple(box) in self.posGoals:
-                final_grid[tuple(box)] = 5  # Box on Button
+            final_grid[final_player_pos] = 2  # Normal Player
+
+        for box in list(final_pos_boxes):
+            if box in self.posGoals:
+                final_grid[box] = 5  # Box on Button
             else:
-                final_grid[tuple(box)] = 3  # Normal Box
+                final_grid[box] = 3  # Normal Box
         
         return final_grid
     """
