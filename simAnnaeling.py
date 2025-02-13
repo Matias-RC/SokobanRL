@@ -266,6 +266,13 @@ def simulated_annealing_trajectory(initial_solution,grid,manager,move_library,al
         best_improvement_score = 0
         
         # Evaluate each candidate in the pool.
+        """
+        nodes = set()
+        for candidate in candidate_pool:
+            for node in candidate.nodesList():
+                nodes.add(node)
+        """
+
         for candidate in candidate_pool:
             improvement_score, improvement_details = perceived_improvability_fn(
                 candidate, delta_scorer, manager, move_library
