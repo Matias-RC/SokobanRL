@@ -181,30 +181,26 @@ class BackwardTraversal:
         frontier.append(end_node)
                 
         seen_states = set()
-        for state in seen_states:
-            seen_states.add(state)
-
-        while len(self.frontier) > 0 and max_depth > 0:
-            if len(self.frontier) < max_breadth:
-
-                new_frontier = []
-                
-                for node in frontier:
-                    if node.state not in seen_states:
-                        seen_states.add(node.state)
-                        position_player, position_boxes = node.state
-                        bool_condition, legalActions_boxArrengements = self.inverseManager.legalInverts(posPlayer=position_player,
-                                                                                                        posBox=position_boxes) 
-                        legalActions, boxArrengements = legalActions_boxArrengements
-                        if bool_condition:
-                            for action,box_arr in zip(legalActions,boxArrengements):
-                                condition, new_node = self.inverseManager.legalInvertedUpdate(macro=action,
-                                                                                            game_data=(position_player,box_arr),
-                                                                                            node=node)
-                                if condition:
-                                    new_frontier.append(new_node)
-                max_depth -= 1
-                frontier = new_frontier
+        while 0 < len(self.frontier) < max_breadth and max_depth > 0:
+            new_frontier = []
+            
+            for node in frontier:
+                frontier.remove(node)
+                if node.state not in seen_states:
+                    seen_states.add(node.state)
+                    position_player, position_boxes = node.state
+                    bool_condition, legalActions_boxArrengements = self.inverseManager.legalInverts(posPlayer=position_player,
+                                                                                                    posBox=position_boxes) 
+                    legalActions, boxArrengements = legalActions_boxArrengements
+                    if bool_condition:
+                        for action,box_arr in zip(legalActions,boxArrengements):
+                            condition, new_node = self.inverseManager.legalInvertedUpdate(macro=action,
+                                                                                        game_data=(position_player,box_arr),
+                                                                                        node=node)
+                            if condition:
+                                new_frontier.append(new_node)
+            max_depth -= 1
+            frontier = new_frontier
 
         print("Number of paths:",len(self.frontier))
         return frontier #self.frontier
