@@ -63,6 +63,7 @@ class BackwardTraversal:
                 self.datasets.append(batch_dataset_torch)
         
         return self.datasets
+    
     """
     def generate_examples(self,initial_node_path,task,n_examples=5):
 
@@ -227,4 +228,23 @@ class BackwardTraversal:
             frontier = new_frontier
 
         print("Number of paths:",len(self.frontier))
-        return frontier #self.frontier
+        return frontier, end_node #self.frontier
+    
+    def frontier_expand(self,frontier, macros):
+        '''Expands the frontier nodes to the next possible states.'''
+        new_frontier = []
+        for node in frontier:
+            position_player, position_boxes = node.state
+            for m in macros:
+                condition, new_node = self.inverseManager.legalInvertedUpdate(macro=m,
+                                                                            game_data=(position_player,position_boxes),
+                                                                            node=node)
+                if condition:
+                    new_frontier.append(new_node)
+        return new_frontier
+    
+    def procedural_batch(self,initial_node_path,task,n_examples=5, max_depth=8, max_breadth=100000):
+        """
+        Across our depth from max to 0 we tag the elements of the  frontier
+        That is the number of times
+        """
