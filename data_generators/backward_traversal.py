@@ -69,12 +69,12 @@ class BackwardTraversal:
         for _ in range(n_examples):
             nodes_path = initial_node_path.nodesList()
             complete_path = initial_node_path.statesList()
-            actions_path = initial_node_path.trajectory()[0:-1] #inversed_actions
+            actions_path = initial_node_path.trajectory()#inversed_actions
             positions_path = range(len(complete_path)) #ranking from 0 to len of the path
             rnd_path_indexes = self.get_random_subpath(positions_path)
 
             start_state, end_state = complete_path[rnd_path_indexes[0]],complete_path[rnd_path_indexes[-1]]
-            sub_path_actions = [actions_path[k] for k in rnd_path_indexes][0:-1]
+            sub_path_actions = [actions_path[k] for k in rnd_path_indexes]
             subpath_end_node = nodes_path[rnd_path_indexes[-1]]
 
             all_paths = self.backward_traversal_all_paths(end_node=subpath_end_node,
