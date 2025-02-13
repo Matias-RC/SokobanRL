@@ -125,37 +125,32 @@ class BackwardTraversal:
             batches[batch_index].append(nodesList[idx])
         return batches
     
-    def backward_traversal_paths(self,end_node,initial_grid):
+    def backward_traversal_paths(self,end_node,initial_grid, macros):
         '''Generates the backward traversal paths starting from end node.'''
         final_grid_state = self.inverseManager.initializer(initial_grid=initial_grid,end_node=end_node)
         end_node = InvertedNode(state=end_node.state,parent=None,action=None,inversed_action=None,rank=0)
-        self.frontier = []
-        self.frontier.append(end_node)
-        self.seen_states = set()
+        frontier = []
+        frontier.append(end_node)
+        seen_states = set()
 
-        while len(self.frontier) > 0 and self.maxDepth > 0:
-            if len(self.frontier) < self.maxBreadth:
+        while len(frontier) > 0 and self.maxDepth > 0:
+            if len(frontier) < self.maxBreadth:
                 new_frontier = []
-                for node in self.frontier:
-                    if node.state not in self.seen_states:
-                        self.seen_states.add(node.state)
+                
+                for node in frontier:
+                    if node.state not in seen_states:
+                        seen_states.add(node.state)
                         position_player, position_boxes = node.state
-                        bool_condition, legalActions_boxArrengements = self.inverseManager.legalInverts(posPlayer=position_player,posBox=position_boxes) 
-                        legalActions, boxArrengements = legalActions_boxArrengements
-                        if bool_condition:
-                            for action,box_arr in zip(legalActions,boxArrengements):
-                                inversed_action = (-action[0], -action[1])
-                                new_node = InvertedNode(state=(self.inverseManager.FastInvert(position_player,action),box_arr),
-                                                        parent=node,
-                                                        action=action,
-                                                        inversed_action=inversed_action,
-                                                        rank=node.rank-1)
-                                if not self.inverseManager.isEndState(new_node): #if the state is not the end state then save, whe need to move boxes
-                                    new_frontier.append(new_node)
-                self.maxDepth -= 1
-                self.frontier = new_frontier
+                        for m in macros:
+                            condition, new_node = self.inverseManager.legalInvertedUpdate(macro=m,
+                                                                                        game_data=(position_player,position_boxes),
+                                                                                        node=node)
+                            if condition:
+                                new_frontier.append(new_node)
+                max_depth -= 1
+                frontier = new_frontier
             else:
-                batches = self.makeBatches(self.frontier, self.batchSize)
+                batches = self.makeBatches(frontier, self.batchSize)
                 selected_nodes = []
 
                 for batch in batches:
@@ -166,10 +161,10 @@ class BackwardTraversal:
                     for idx in selected_indices:
                         selected_nodes.append(batch[idx])
                 
-                self.frontier = selected_nodes
+                frontier = selected_nodes
 
-        print("Number of paths:",len(self.frontier))
-        return self.frontier
+        print("Number of paths:",len(frontier))
+        return frontier
     
 
     def backward_traversal_all_paths(self, macros, end_node,initial_grid,seen_states,max_depth,max_breadth=1000000000):
