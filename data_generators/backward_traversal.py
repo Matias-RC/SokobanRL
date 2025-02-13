@@ -172,7 +172,7 @@ class BackwardTraversal:
         return self.frontier
     
 
-    def backward_traversal_all_paths(self,end_node,initial_grid,seen_states,max_depth,max_breadth=1000000000):
+    def backward_traversal_all_paths(self, macros, end_node,initial_grid,seen_states,max_depth,max_breadth=1000000000):
         '''Generates all possible backward traversal paths starting from end node.'''
         
         final_grid_state = self.inverseManager.initializer(initial_grid=initial_grid,end_node=end_node)
@@ -185,20 +185,15 @@ class BackwardTraversal:
             new_frontier = []
             
             for node in frontier:
-                frontier.remove(node)
                 if node.state not in seen_states:
                     seen_states.add(node.state)
                     position_player, position_boxes = node.state
-                    bool_condition, legalActions_boxArrengements = self.inverseManager.legalInverts(posPlayer=position_player,
-                                                                                                    posBox=position_boxes) 
-                    legalActions, boxArrengements = legalActions_boxArrengements
-                    if bool_condition:
-                        for action,box_arr in zip(legalActions,boxArrengements):
-                            condition, new_node = self.inverseManager.legalInvertedUpdate(macro=action,
-                                                                                        game_data=(position_player,box_arr),
-                                                                                        node=node)
-                            if condition:
-                                new_frontier.append(new_node)
+                    for m in macros:
+                        condition, new_node = self.inverseManager.legalInvertedUpdate(macro=m,
+                                                                                    game_data=(position_player,position_boxes),
+                                                                                    node=node)
+                        if condition:
+                            new_frontier.append(new_node)
             max_depth -= 1
             frontier = new_frontier
 
