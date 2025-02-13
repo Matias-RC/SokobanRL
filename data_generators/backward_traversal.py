@@ -79,7 +79,6 @@ class BackwardTraversal:
 
             all_paths = self.backward_traversal_all_paths(end_node=subpath_end_node,
                                                             initial_grid=task.initial_state, #map, it does not matter if is the iniital map or the final map
-                                                            seen_states=[complete_path[k] for k in rnd_path_indexes],#[0:-1],
                                                             max_depth=len(rnd_path_indexes),
                                                             max_breadth=10000000000000000000)
 
@@ -167,7 +166,7 @@ class BackwardTraversal:
         return frontier
     
 
-    def backward_traversal_all_paths(self, macros, end_node,initial_grid,seen_states,max_depth,max_breadth=1000000000):
+    def backward_traversal_all_paths(self, macros, end_node,initial_grid,max_depth,max_breadth=1000000000):
         '''Generates all possible backward traversal paths starting from end node.'''
         
         final_grid_state = self.inverseManager.initializer(initial_grid=initial_grid,end_node=end_node)
