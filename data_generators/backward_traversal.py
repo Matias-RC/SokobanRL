@@ -107,11 +107,10 @@ class BackwardTraversal:
                                                         initial_grid=task.initial_state,
                                                         max_depth=max_depth,
                                                         max_breadth=10000000000000000000)
-        for node in all_paths:
-            state, next_state = [node.state, node.parent.state]
-            grid = self.inverseManager.final_state_grid(initial_grid = task.initial_state,
-                                                        final_player_pos=state[0],
-                                                        final_pos_boxes=state[1])
+        #Want to create a batch of  (parent, parent_grid, [children], [children_grid])
+
+
+            
             
             
 
@@ -205,15 +204,15 @@ class BackwardTraversal:
             new_frontier = []
             
             for node in frontier:
-                if node.state not in seen_states:
-                    seen_states.add(node.state)
-                    position_player, position_boxes = node.state
-                    for m in macros:
-                        condition, new_node = self.inverseManager.legalInvertedUpdate(macro=m,
-                                                                                    game_data=(position_player,position_boxes),
-                                                                                    node=node)
-                        if condition:
-                            new_frontier.append(new_node)
+                seen_states.add(node.state)
+                position_player, position_boxes = node.state
+                for m in macros:
+                    condition, new_node = self.inverseManager.legalInvertedUpdate(macro=m,
+                                                                                game_data=(position_player,position_boxes),
+                                                                                node=node)
+                    if condition and  new_node.state not in seen_states:
+                        node.children.append(new_node)
+                        new_frontier.append(new_node)
             max_depth -= 1
             frontier = new_frontier
 
