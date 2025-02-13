@@ -299,7 +299,7 @@ def simulated_annealing_trajectory(initial_solution,grid,manager,move_library,al
                 acceptance_probability = math.exp(-quality_delta / temperature)
                 if random.random() < acceptance_probability:
                     candidate_pool.append(alternative)
-            trajectories_cache.append(alternative)
+            trajectories_cache.append(alternative, trajectorySuccess)
         
         temperature *= cooling_rate
         break
