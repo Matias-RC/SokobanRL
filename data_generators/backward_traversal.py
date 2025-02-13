@@ -199,11 +199,9 @@ class BackwardTraversal:
                         if bool_condition:
                             for action,box_arr in zip(legalActions,boxArrengements):
                                 inversed_action = (-action[0], -action[1])
-                                new_node = InvertedNode(state=(self.inverseManager.FastInvert(position_player,action),box_arr),
-                                                        parent=node,
-                                                        action=action,
-                                                        inversed_action=inversed_action,
-                                                        rank=node.rank-1)
+                                condition, new_node = self.inverseManager.legalInvertedUpdate(macro=action,
+                                                                                            game_data=(position_player,box_arr),
+                                                                                            node=node)
                                 
                                 if not self.inverseManager.isEndState(new_node): #if the state is not the end state then save, whe need to move boxes
                                     new_frontier.append(new_node)
