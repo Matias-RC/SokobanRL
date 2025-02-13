@@ -93,7 +93,7 @@ class InversedSokobanManager:
     def isLegalInversion(self, action, posPlayer, posBox): 
         xPlayer, yPlayer = posPlayer
         x1, y1 = xPlayer - action[0], yPlayer - action[1]
-        return (x1, y1) not in posBox + self.posWalls
+        return (x1, y1) not in posBox + self.posWalls and posBox != self.posGoals
     
     def legalInvertedUpdate(self, macro, game_data, node):
         player, posBoxes = game_data
@@ -120,7 +120,7 @@ class InversedSokobanManager:
 
         new_state = (player, tuple(boxes))
 
-        new_node = InvertedNode(state=new_state, parent=node, action=macro)
+        new_node = InvertedNode(state=new_state, parent=node, action=macro, rank=node.rank + 1)
         return True, new_node
     
     def initializer(self,initial_grid, end_node):
