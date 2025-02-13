@@ -12,6 +12,7 @@ class InvertedNode:
     ''' Data structure for a node in the search tree. '''
     state: Any
     parent: Optional['InvertedNode'] = None
+    children: Optional[List['InvertedNode']] = None
     action: Optional[Any] = None
     inversed_action: Optional[Any] = None
     rank: int = 0
