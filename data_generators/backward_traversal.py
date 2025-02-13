@@ -34,10 +34,11 @@ class BackwardTraversalDataset(Dataset):
 
 
 class BackwardTraversal:
-    def __init__(self,session=None,model=None,manager=None,maximumDepth=4,maximumBreadth=10,testsPerSearch=None,inverseManager=None, bacthSize = 4, drawSize = 2):
+    def __init__(self,session,model,manager, solver ,maximumDepth=4,maximumBreadth=10,testsPerSearch=None,inverseManager=None, bacthSize = 4, drawSize = 2):
         self.session  = session
         self.model =  model
         self.manager = manager
+        self.solver = solver
         self.maxDepth = maximumDepth
         self.maxBreadth = maximumBreadth
         self.cadence = testsPerSearch
@@ -89,8 +90,33 @@ class BackwardTraversal:
             example = (game_grid,start_state,sub_path_actions,end_state, 1/len(all_paths) ) #map, start_state, actions, end_state, probability
             batch.append(example)
         return batch
-        
     
+    def generate_batch(self,initial_node_path,task,n_examples=5, max_depth=8):
+        """
+        Different from generate_examples, this function creates a batch of examples from the terminal node
+        you retrieve all paths that have a ceratin depth l and then make the batch
+        Returns:
+            A batch of examples where each   example is  a pair all_paths[i].state, all_paths[i].parent.state
+        """
+        batch = []
+        nodes_path = initial_node_path.nodesList()
+        complete_path = initial_node_path.statesList()
+        actions_path = initial_node_path.trajectory()
+
+        all_paths = self.backward_traversal_all_paths(end_node=initial_node_path,
+                                                        initial_grid=task.initial_state,
+                                                        max_depth=max_depth,
+                                                        max_breadth=10000000000000000000)
+        for node in all_paths:
+            state, next_state = [node.state, node.parent.state]
+            grid = self.inverseManager.final_state_grid(initial_grid = task.initial_state,
+                                                        final_player_pos=state[0],
+                                                        final_pos_boxes=state[1])
+            
+            
+
+
+
     def get_random_subpath(self, indexes_path):
         path_length = len(indexes_path)
         subpath_len = random.randint(2, path_length)  
