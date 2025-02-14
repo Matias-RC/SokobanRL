@@ -37,7 +37,10 @@ class TransformerEncoderForScoring(nn.Module):
             attention_type,
         )
 
-        #self.regressor = ...
+        self.regressor = SequenceRegressor(hidden_dim=hidden_dim,
+                                           output_dim=1,
+                                           dropout_rate=dropout_rate,
+                                           device=device)
 
         self.encoder = BackboneTransformerEncoder(
             hidden_dim=hidden_dim,
