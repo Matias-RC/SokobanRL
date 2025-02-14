@@ -4,7 +4,6 @@ import torch.nn as nn
 from models.transformers.embeddings.theoretical import TheoreticalEmbedding
 from models.transformers.embeddings.learnable import LearnableEmbedding
 
-
 class BackboneEmbedding(nn.Module):
     def __init__(
         self,

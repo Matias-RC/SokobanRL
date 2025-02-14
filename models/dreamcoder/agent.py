@@ -51,7 +51,7 @@ class Agent:
 
     def solve(self, task):
 
-        return self.solver.do(task,self.q_net) #return a solution
+        return self.solver.do(task,self.model) #return a solution
 
     def abstraction(self):
 
@@ -63,11 +63,9 @@ class Agent:
 
         self.refact()
         
-    def refact(self):
+    def refact(self,factors=[]):
 
-        # self.library += factors # Expand using abstractions/factors
-
-        pass
+        self.library += factors # Expand using abstractions/factors
     
     def dreaming(self):
         
