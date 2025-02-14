@@ -6,13 +6,13 @@ from trainers.dpra import DPRA
 from data_generators.backward_traversal import BackwardTraversal
 from trainers.dpra import DPRA
 
-from models.transformers.task.scoring_model import ScoringModel
+from models.transformers.task.scoring_model import TransformerEncoderForScoring
 from managers.inverse_manager import InversedSokobanManager
 from managers.sokoban_manager import SokobanManager
 
 
 class Fantasizer:
-    def __init__(self, data_generator,trainer,model,solver):
+    def __init__(self, data_generator,trainer):
         
         if data_generator == "backward_traversal":
             self.data_generator = BackwardTraversal(session=None,
