@@ -26,7 +26,6 @@ class ScoringEmbedding(nn.Module):
         self.states_actions_embd = nn.Embedding(num_embeddings=vocab_actions_size+vocab_states_size+3, #+3 for padding,CLS,SEP 
                                                embedding_dim=hidden_dim,
                                                dtype=dtype, device=device)
-          
         self.position_embedding = nn.Embedding(num_embeddings=position_size, # max lenght of an input
                                                embedding_dim=hidden_dim,
                                                dtype=dtype, device=device)

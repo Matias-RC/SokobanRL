@@ -37,11 +37,7 @@ class TransformerEncoderForScoring(nn.Module):
             attention_type,
         )
 
-        self.regressor = SequenceRegressor(hidden_dim=hidden_dim,
-                                           output_dim=1,
-                                           dropout_rate=dropout_rate,
-                                           device=device)
-
+        #process all the input data with a decoder transformer
         self.encoder = BackboneTransformerEncoder(
             hidden_dim=hidden_dim,
             num_layers=num_layers,
@@ -57,6 +53,12 @@ class TransformerEncoderForScoring(nn.Module):
             embedding_type=embedding_type,
             attention_type=attention_type,
         )
+
+        #regressor
+        self.regressor = SequenceRegressor(hidden_dim=hidden_dim,
+                                           output_dim=1,
+                                           dropout_rate=dropout_rate,
+                                           device=device)
 
         self.is_training = False
 
