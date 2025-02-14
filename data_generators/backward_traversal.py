@@ -55,7 +55,6 @@ class BackwardTraversal:
                  bacthSize = 4,
                  drawSize = 2):
         
-        
         self.session  = session
         self.model =  model
         self.manager = manager

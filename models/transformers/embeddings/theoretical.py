@@ -1,11 +1,7 @@
 import torch
 import torch.nn as nn
 
-from models.transformers.embeddings.tasks.func_composition import FunctCompositionEmbedding
-from models.transformers.embeddings.tasks.eccn import ECCNEmbedding
-from models.transformers.embeddings.tasks.match3 import MATCH3Embedding
-from models.transformers.embeddings.tasks.match3equal import MATCH3EqualEmbedding
-from models.transformers.embeddings.tasks.comp import CompositionEmbedding
+from models.transformers.embeddings.tasks.scoring import ScoringEmbedding
 
 
 class TheoreticalEmbedding(nn.Module):

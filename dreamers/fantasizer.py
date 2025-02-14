@@ -16,8 +16,8 @@ class Fantasizer:
         
         if data_generator == "backward_traversal":
             self.data_generator = BackwardTraversal(session=None,
-                                                    model=model,
-                                                    solver=solver,
+                                                    model=None,
+                                                    solver=None,
                                                     inverseManager=InversedSokobanManager(),
                                                     manager=SokobanManager(),)
 

@@ -1,9 +1,8 @@
 import torch
 import torch.nn as nn
 
-from models.backbone.encoder import BackboneTransformerEncoder
-from models.feed_forward_networks.classifier import TokenClassification
-
+from models.transformers.encoder.backbone_transformer_encoder import BackboneTransformerEncoder
+from models.transformers.feed_forward_networks.seqregressor import SequenceRegressor
 
 class TransformerEncoderForScoring(nn.Module):
     def __init__(
@@ -38,7 +37,7 @@ class TransformerEncoderForScoring(nn.Module):
             attention_type,
         )
 
-        self.regressor = ...
+        #self.regressor = ...
 
         self.encoder = BackboneTransformerEncoder(
             hidden_dim=hidden_dim,
