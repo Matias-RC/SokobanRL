@@ -25,7 +25,8 @@ class LearnableEmbedding(nn.Module):
                     embedding_norm_scalar=embedding_norm_scalar,
                     dtype=dtype,
                     device=device,
-                    vocabulary_size=num_embeddings,
+                    vocab_actions_size=num_embeddings,
+                    vocab_states_size=num_embeddings,
                     position_size=max_length
                 )
 

@@ -41,8 +41,6 @@ curriculum = Curriculum(
 model = TransformerEncoderForScoring(hidden_dim=64,
                                     num_layers=1,
                                     num_heads=1,
-                                    dropout=0.1,
-                                    device="cpu",
                                     embedding_norm_scalar=1,
                                     use_norm=False,
                                     use_attention_dropout=True,

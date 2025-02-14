@@ -28,7 +28,6 @@ class BackboneEmbedding(nn.Module):
                 mode=mode,
                 dtype=dtype,
                 device=device,
-                is_edge=is_edge,
             )
         elif self.embedding_type == "learnable":
             self.embedding = LearnableEmbedding(
@@ -37,7 +36,6 @@ class BackboneEmbedding(nn.Module):
                 mode=mode,
                 dtype=dtype,
                 device=device,
-                is_edge=is_edge,
                 num_embeddings=num_embeddings,
                 max_length=max_length
             )

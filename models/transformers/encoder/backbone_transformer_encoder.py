@@ -54,7 +54,6 @@ class BackboneTransformerEncoder(nn.Module):
 
         # Initialize transformer layers
         if share_layers:
-            # Use a single shared layer
             shared_layer = BackboneTransformerLayer(
                 hidden_dim=hidden_dim,
                 num_heads=num_heads,
