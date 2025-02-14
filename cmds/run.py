@@ -7,7 +7,7 @@ from data.env_objects.sokoban_scenario import Scenario
 from learning.curriculum import Curriculum
 from models.dreamcoder.q_uniform import q_uniform
 from managers.sokoban_manager import SokobanManager
-from models.transformers.task.scoring_model import TransformerEncoderForScoring
+from models.q_models.delta_scorer import DeltaScorer
 
 NUM_TASKS = 2
 GRID_SIZE = 6
@@ -37,26 +37,13 @@ curriculum = Curriculum(
     strategy = "sorted"
 )
 
-
-model = TransformerEncoderForScoring(hidden_dim=64,
-                                    num_layers=1,
-                                    num_heads=1,
-                                    embedding_norm_scalar=1,
-                                    use_norm=False,
-                                    use_attention_dropout=True,
-                                    eps=0.000001,
-                                    share_layers=False,
-                                    device="cpu",
-                                    embedding_type="learnable",
-                                    attention_type="standard",
-                                    output_dim=1)
-
-
+model = DeltaScorer()
 m = SokobanManager()
 a = Agent(
     actions=actions_for_sokoban,
     manager=m,
-    model=model,
+    model=q_uniform,
+    recognition_model=model,
     batchSize=10,
     drawSize=1
 )

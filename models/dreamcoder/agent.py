@@ -5,7 +5,7 @@ from data.task import Task
 from dreamers.dreamer import Dreamer
 
 class Agent:
-    def __init__(self,actions,manager,model,batchSize,drawSize):
+    def __init__(self,actions,manager,model,recognition_model,batchSize,drawSize):
 
         self.actions = actions
 
@@ -13,6 +13,7 @@ class Agent:
         self.current_factors = None
         
         self.model = model 
+        self.recognition_model = recognition_model 
 
         self.solver=MonteCarloTreeSearch(library_actions=self.actions,
                                          manager=manager,
@@ -71,5 +72,5 @@ class Agent:
         
         self.model = self.dreamer.do(
             session=self.current_session,
-            model=self.model
+            model=self.recognition_model
         )
