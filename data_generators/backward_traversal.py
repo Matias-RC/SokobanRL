@@ -48,6 +48,7 @@ class BackwardTraversal:
                  model,
                  manager,
                  solver ,
+                 macros = [],
                  maximumDepth=4,
                  maximumBreadth=10,
                  testsPerSearch=None,
@@ -59,6 +60,7 @@ class BackwardTraversal:
         self.model =  model
         self.manager = manager
         self.solver = solver
+        self.macros = macros
         self.maxDepth = maximumDepth
         self.maxBreadth = maximumBreadth
         self.cadence = testsPerSearch
@@ -75,7 +77,7 @@ class BackwardTraversal:
             terminal, initialState = states_solution[-1], states_solution[0]
             #final_grid_state = self.inverseManager.initializer(initial_grid=task.initial_state,end_node=end_node)
             backwards_paths = self.backward_traversal_paths(end_node=end_node,
-                                                            initial_grid=task.initial_state,)
+                                                            initial_grid=task.initial_state)
             
             for initial_node_path in backwards_paths:
                 batch = self.generate_batch(initial_node_path,task=task)
@@ -84,7 +86,7 @@ class BackwardTraversal:
         
         return self.datasets
 
-    def generate_batch(self,initial_node_path,task, max_depth=8):
+    def generate_batch(self,initial_node_path,task,max_depth=8):
         """
         Different from generate_examples, this function creates a batch of examples from the terminal node
         you retrieve all paths that have a ceratin depth l and then make the batch
@@ -112,9 +114,7 @@ class BackwardTraversal:
                     new_childs.extend(node.children)
             childs = new_childs
 
-
-
-    def get_random_subpath(self, indexes_path):
+    def get_random_subpath(self,indexes_path):
         path_length = len(indexes_path)
         subpath_len = random.randint(2, path_length)  
 
@@ -130,7 +130,7 @@ class BackwardTraversal:
         probabilities = exp_values / np.sum(exp_values) # Normalize to sum to 1
         return probabilities.tolist()
     
-    def makeBatches(self, nodesList, batchSize):
+    def makeBatches(self,nodesList,batchSize):
         n = len(nodesList)
         numBatches = n // batchSize
 
@@ -147,15 +147,17 @@ class BackwardTraversal:
             batches[batch_index].append(nodesList[idx])
         return batches
     
-    def backward_traversal_paths(self,end_node,initial_grid, macros):
+    def backward_traversal_paths(self,end_node,initial_grid):
         '''Generates the backward traversal paths starting from end node.'''
         final_grid_state = self.inverseManager.initializer(initial_grid=initial_grid,end_node=end_node)
         end_node = InvertedNode(state=end_node.state,parent=None,action=None,inversed_action=None,rank=0)
         frontier = []
         frontier.append(end_node)
         seen_states = set()
+        
+        max_depth = self.maxDepth
 
-        while len(frontier) > 0 and self.maxDepth > 0:
+        while len(frontier) > 0 and max_depth > 0:
             if len(frontier) < self.maxBreadth:
                 new_frontier = []
                 
@@ -163,7 +165,7 @@ class BackwardTraversal:
                     if node.state not in seen_states:
                         seen_states.add(node.state)
                         position_player, position_boxes = node.state
-                        for m in macros:
+                        for m in self.macros:
                             condition, new_node = self.inverseManager.legalInvertedUpdate(macro=m,
                                                                                         game_data=(position_player,position_boxes),
                                                                                         node=node)
@@ -189,7 +191,7 @@ class BackwardTraversal:
         return frontier
     
 
-    def backward_traversal_all_paths(self, macros, end_node,initial_grid,max_depth,max_breadth=1000000000):
+    def backward_traversal_all_paths(self,macros,end_node,initial_grid,max_depth,max_breadth=1000000000):
         '''Generates all possible backward traversal paths starting from end node.'''
         
         final_grid_state = self.inverseManager.initializer(initial_grid=initial_grid,end_node=end_node)
@@ -204,7 +206,7 @@ class BackwardTraversal:
             for node in frontier:
                 seen_states.add(node.state)
                 position_player, position_boxes = node.state
-                for m in macros:
+                for m in self.macros:
                     condition, new_node = self.inverseManager.legalInvertedUpdate(macro=m,
                                                                                 game_data=(position_player,position_boxes),
                                                                                 node=node)
