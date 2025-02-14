@@ -43,7 +43,8 @@ class BackwardTraversalDataset(Dataset):
 
 
 class BackwardTraversal:
-    def __init__(self,session,
+    def __init__(self,
+                 session,
                  model,
                  manager,
                  solver ,
@@ -53,6 +54,8 @@ class BackwardTraversal:
                  inverseManager=None,
                  bacthSize = 4,
                  drawSize = 2):
+        
+        
         self.session  = session
         self.model =  model
         self.manager = manager
