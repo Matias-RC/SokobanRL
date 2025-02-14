@@ -25,11 +25,9 @@ class Fantasizer:
             self.trainer = DPRA()
                 
     def do(self, session, model):
+        dataset = self.data_generator.do(session, model) #pytorch dataset
 
-        #dataset of pytorch
-        dataset = self.data_generator.do(session, model)
-
-        trained_model = self.trainer.do(dataset, model)
+        trained_model = self.trainer.do(dataset, model) #model trained by the DPRA/other algorithm
 
         return trained_model
     
