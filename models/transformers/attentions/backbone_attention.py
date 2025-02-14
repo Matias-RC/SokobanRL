@@ -4,7 +4,6 @@ import torch.nn as nn
 
 from models.transformers.attentions.standard import StandardAttention
 from models.transformers.attentions.strassen import StrassenAttention
-from models.transformers.attentions.standardwithalivi import StandardAttentionWithAliVi
 
 class BackboneAttention(nn.Module):
     def __init__(
@@ -40,21 +39,7 @@ class BackboneAttention(nn.Module):
         # Dictionary of available attention classes
         attention_classes = {
             "standard": StandardAttention,
-            "triplet": TripletAttention,
-            "smarter": SmarterAttention,
             "strassen": StrassenAttention,
-            "third_order": ThirdOrderAttention,
-            "triangular": TriangularAttention,
-            "naive_triplet": NaiveTripletAttention,
-            "naive_third_order": NaiveThirdOrderAttention,
-            # "standard_with_rope": StandardAttentionWithRoPE,
-            # "standard_with_nope": StandardAttentionWithNoPE,
-            # "standard_with_abspe": StandardAttentionWithAbsPE,
-            "standard_with_relpe_kq": StandardAttentionWithRelPEKQ,
-            "standard_with_relpe_k": StandardAttentionWithRelPEK,
-            "strassen_with_relpe_kq": StrassenAttentionWithRelPEKQ, 
-            "strassen_with_relpe_k": StrassenAttentionWithRelPEK,
-
         }
 
         # Validate and instantiate the selected attention type

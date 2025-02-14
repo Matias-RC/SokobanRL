@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from models.transformers.attentions.back attentions.backbone_attention import BackboneAttention
-from models.feed_forward_networks.attention import FFN
+from models.transformers.attentions.backbone_attention import BackboneAttention
+from models.transformers.feed_forward_networks.attention import FFN
 
 
 class BackboneTransformerLayer(nn.Module):
