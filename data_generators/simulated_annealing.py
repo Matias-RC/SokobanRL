@@ -20,8 +20,7 @@ class simulatedAnnealing:
     def node_exists_in_pool(new_node, pool):
         return any(existing_node.state == new_node.state for existing_node in pool)
     
-    def annealing(self, initial_solution, grid, primitives, num_alternatives=5, 
-                  initial_temperature=1000.0, cooling_rate=0.95, minimum_temperature=1e-3):
+    def annealing(self, initial_solution, grid, primitives, initial_temperature=1000.0, cooling_rate=0.95, minimum_temperature=1e-3):
         """
         Performs a simulated annealing process to refine an initial solution, represented as a node at a terminal state.  
         The goal is to iteratively improve the trajectory by exploring neighboring nodes while balancing exploration and exploitation.
@@ -105,3 +104,5 @@ class simulatedAnnealing:
             temperature *= cooling_rate
 
         return trajectories
+    
+
