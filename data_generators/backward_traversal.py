@@ -4,9 +4,6 @@ import numpy as np
 import random
 from managers.inverse_manager import InvertedNode
 
-
-
-
 class BackwardTraversalDataset(Dataset):
     def __init__(self, dataset,one_batch = True):
         """

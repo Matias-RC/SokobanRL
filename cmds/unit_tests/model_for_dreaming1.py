@@ -9,6 +9,10 @@ from models.dreamcoder.q_uniform import q_uniform
 from managers.sokoban_manager import SokobanManager
 from models.q_models.delta_scorer import DeltaScorer
 
+
+#for test
+from data.datasets.backward_traversal.dataset import BackwardTraversalDataset
+
 NUM_TASKS = 2
 GRID_SIZE = 6
 
@@ -48,9 +52,8 @@ a = Agent(
 
 for key_sessions, session in curriculum.sessions.items():
     session_solved = a.wake(m,session) # solve all the tasks in the session
-    print(session_solved[0])
-    a.sleep()       # use each solution from the last session to learn patterns trought two-phases: (1) Abstraction and (2) Dreaming
-    # (1) Abstraction: Found factors (macro-actions) to decrease the solver's search-space
-    # (2) Dreaming: TODO future
+    
 
-print("Factors:", a.current_factors)
+#Dreaming test
+session_test = session_solved[0]
+print(session_solved.__dict__)
