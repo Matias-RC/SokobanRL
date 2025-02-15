@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import math
 import numpy as np
 from collections import defaultdict
 import random
@@ -53,3 +54,15 @@ class DPRA:
                 optimizer.step()
                 # Zero gradients
                 optimizer.zero_grad()
+    
+    def pairwise_loss(self, i,j, ij_distance):
+        """
+        Compute the pairwise loss of the model with the succesful trajectories
+        Theory:
+        \mathcal{L}_{pair} = -[y\log(P_{i,j})+(1-y)\log(1-P_{i,j})]
+        y  = (1 if $r(x_i) > r(x_j)$ and 0 otherwise)
+        """
+        return - math.log(1/(1+math.exp(-(i-j))))*ij_distance # Entropy of i because  we assume it is the better state relative to j and that y = 1
+
+    def trainWithTrajectory():
+        pass
