@@ -139,7 +139,7 @@ def RandomPlacePlayer(empty_positions, grid, seed=None):
 
 
 
-def Scenario(height=8,width=8):
+def Scenario(height,width):
         solution = "x"
         while solution == "x":
             #Generate room
