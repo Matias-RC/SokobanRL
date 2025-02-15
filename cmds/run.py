@@ -35,7 +35,7 @@ curriculum = Curriculum(
     strategy = "sorted"
 )
 
-model = DeltaScorer()
+model = DeltaScorer(actions_for_sokoban)
 m = SokobanManager()
 a = Agent(
     actions=actions_for_sokoban,

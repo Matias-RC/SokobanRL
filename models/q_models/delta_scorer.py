@@ -4,8 +4,8 @@ from models.transformers.task.scoring_model import TransformerEncoderForScoring
 
 class DeltaScorer:
 
-    def __init__(self,scorer="transformer",config=None,compiler=None):
-        
+    def __init__(self,library, scorer="transformer",config=None,compiler=None):
+        self.library = library
         if scorer == "transformer":
             self.scorer = TransformerEncoderForScoring(hidden_dim=64,
                                                        num_layers=1,

@@ -12,11 +12,13 @@ class InvertedNode:
     ''' Data structure for a node in the search tree. '''
     state: Any
     parent: Optional['InvertedNode'] = None
-    children: Optional[List['InvertedNode']] = None
+    children: Optional[List['InvertedNode']] = None 
     action: Optional[Any] = None
     inversed_action: Optional[Any] = None
     rank: int = 0
-
+    def __post_init__(self):
+        if self.children is None:
+            self.children = [] 
     def trajectory(self) -> List['InvertedNode']:
         node, path = self, []
 
@@ -110,13 +112,12 @@ class InversedSokobanManager:
             pull_candidate = (player[0] + dx, player[1] + dy)
             pull = pull_candidate in boxes
 
-            if not self.isLegalInversion((dx, dy), player, tuple(boxes)):
-                return False, None
-
             if pull:
                 boxes.remove(pull_candidate)
                 boxes.add(player)
 
+            if not self.isLegalInversion((dx, dy), player, tuple(boxes)):
+                return False, None
             player = new_player
 
         new_state = (player, tuple(boxes))

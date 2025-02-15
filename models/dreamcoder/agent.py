@@ -65,8 +65,9 @@ class Agent:
         self.refact()
         
     def refact(self,factors=[]):
-
+        
         self.library += factors # Expand using abstractions/factors
+        self.model.library = self.library
     
     def dreaming(self):
         

@@ -14,6 +14,8 @@ class BackwardTraversalDataset(Dataset):
         Output:
             A dataset of the form (grid, rank) as torch tensors
         """
+        super().__init__()  # Ensures compatibility with torch Dataset
+        self.dataset = []
         if one_batch:
             batch = dataset[0]
             for example in batch:
@@ -67,7 +69,7 @@ class BackwardTraversal:
             states_solution, action_solution = end_node.statesList(), end_node.trajectory()
             terminal, initialState = states_solution[-1], states_solution[0]
             batch = self.generate_batch(end_node, task=task)
-            batch_dataset_torch = BackwardTraversalDataset(batch, one_batch=True)
+            batch_dataset_torch = BackwardTraversalDataset([batch], one_batch=True)
             self.datasets.append(batch_dataset_torch)
         
         return self.datasets

@@ -38,7 +38,7 @@ class DPRA:
     
     def fit(self, dataloader, learner):
 
-        optimizer = self.optimizer()(learner.parameters(), lr=self.lr)
+        optimizer = self.optimizer(learner.parameters(), lr=self.lr)
         loss_function = self.loss()
 
         for epoch in range(self.epochs):
