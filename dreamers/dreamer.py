@@ -3,8 +3,12 @@ from dreamers.fantasizer import Fantasizer
 from dreamers.replayer import Replayer
 
 class Dreamer:
-
-    def __init__(self):
+    def __init__(self, agent):
+        self.agent  = agent
+        self.replayer = Replayer(
+            agent=agent,
+            method="pairwise_loss"
+        )
 
         self.fantasizer = Fantasizer(
             data_generator="backward_traversal",

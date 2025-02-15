@@ -83,7 +83,7 @@ class PriorityQueue:
                 continue
             break
         heap[pos] = newitem
-        """Load puzzles and define the rules of sokoban"""
+
 
 
 class master():

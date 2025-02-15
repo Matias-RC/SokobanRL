@@ -24,7 +24,7 @@ class Agent:
 
         self.abstractor = Decompiling()
 
-        self.dreamer = Dreamer()
+        self.dreamer = Dreamer(model)
         
     
     def wake(self, wake_manager, session: list[Task]):

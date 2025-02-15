@@ -5,7 +5,7 @@ from dcLogic import Solver #solver for sokoban
 import numpy as np
 
 class MonteCarloTreeSearch:
-    def __init__(self,library_actions,manager,batchSize,drawSize,max_depth=100,max_breadth=10000):
+    def __init__(self,library_actions,manager,batchSize,drawSize,max_depth=100,max_breadth=1000000):
         self.manager = manager
         self.library_actions = library_actions
         self.frontier = []
