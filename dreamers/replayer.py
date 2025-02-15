@@ -13,7 +13,7 @@ class Replayer:
         else:
             self.train_with_trayectory = DPRA.trainWithTrajectory
 
-    def do(self, usage_quota):
+    def do(self):
         for t in self.succesful_trajectories:
-            loss = self.train_with_trayectory(t, usage_quota)
+            loss = self.train_with_trayectory(t)
 
