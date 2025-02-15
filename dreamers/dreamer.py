@@ -12,7 +12,8 @@ class Dreamer:
 
         self.fantasizer = Fantasizer(
             data_generator="backward_traversal",
-            trainer="dpra"
+            trainer="dpra",
+            agent=self.agent
         )
 
     def do(self, session, model):

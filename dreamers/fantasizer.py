@@ -12,12 +12,12 @@ from managers.sokoban_manager import SokobanManager
 
 
 class Fantasizer:
-    def __init__(self, data_generator,trainer):
+    def __init__(self, data_generator,trainer, agent):
         
         if data_generator == "backward_traversal":
             self.data_generator = BackwardTraversal(session=None,
                                                     model=None,
-                                                    solver=None,
+                                                    agent=agent,
                                                     inverseManager=InversedSokobanManager(),
                                                     manager=SokobanManager(),)
 

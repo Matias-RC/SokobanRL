@@ -66,13 +66,9 @@ class BackwardTraversal:
             end_node = task.solution
             states_solution, action_solution = end_node.statesList(), end_node.trajectory()
             terminal, initialState = states_solution[-1], states_solution[0]
-            # final_grid_state = self.inverseManager.initializer(initial_grid=task.initial_state, end_node=end_node)
-            backwards_paths = self.backward_traversal_paths(end_node=end_node,
-                                                            initial_grid=task.initial_state)
-            for initial_node_path in backwards_paths:
-                batch = self.generate_batch(initial_node_path, task=task)
-                batch_dataset_torch = BackwardTraversalDataset(batch, one_batch=True)
-                self.datasets.append(batch_dataset_torch)
+            batch = self.generate_batch(end_node, task=task)
+            batch_dataset_torch = BackwardTraversalDataset(batch, one_batch=True)
+            self.datasets.append(batch_dataset_torch)
         
         return self.datasets
 
