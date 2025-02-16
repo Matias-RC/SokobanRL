@@ -12,11 +12,10 @@ class BackwardTraversalDataset(Dataset):
             batch (list): List of tuples of the form (grid, rank)
             one_batch (bool): If True, the dataset is a single batch
         Output:
-            A dataset of the form (grid, rank) as torch tensors
+            A dataset of the form (grid_i, grid_j, rank) as torch tensors
         """
         super().__init__()  # Ensures compatibility with torch Dataset
         self.dataset = []
-        self.usage_quota = usage_quota
 
         number_batches = len(dataset)
         for b in range(number_batches):
@@ -24,28 +23,38 @@ class BackwardTraversalDataset(Dataset):
             examples = self.contruct_examples(batch)
             self.dataset = self.dataset + examples
     
-    def contruct_examples(self,trajectory):
+    def contruct_examples(self, batch):
         examples = []
-        n = len(trajectory)
-        if n < 2:
-            return None  # Not enough states to compare
-        
-        # Determine the number of states to use based on usage_quota.
-        num_states = max(2, int(n * self.usage_quota))
-        # Select evenly spaced indices from the trajectory.
-        indices = np.linspace(0, n - 1, num_states, dtype=int)
-        selected_states = [trajectory[i][0] for i in indices]
-        selected_rankings = [trajectory[i][1] for i in indices]
-        #states_tensor = torch.stack(selected_states).to(self.device)
+        n = len(batch)
+        indices = list(range(n))
+        random.shuffle(indices)  
+        used = [False] * n     
 
-        for i in range(len(indices) - 1):
-            for j in range(i + 1, len(indices)):
-                distance = selected_rankings[j] - selected_rankings[i]  # Use the difference in trajectory indices as a weight.
-                #if distance > 0: #Slack
-                examples.append((torch.tensor(selected_states[i], dtype=torch.float32),
-                                torch.tensor(selected_states[j], dtype=torch.float32),
-                                torch.tensor(distance, dtype=torch.float32)) ) #grid_si,grid_sj,distance
-        
+        for i in indices:
+            if used[i]:
+                continue 
+
+            grid_i, rank_i = batch[i]
+            # Find all candidate indices that are unpaired and have a different rank.
+            candidate_indices = [
+                j for j in indices
+                if not used[j] and j != i and batch[j][1] != rank_i
+            ]
+
+            if candidate_indices:
+                j = random.choice(candidate_indices)
+                used[i] = True
+                used[j] = True
+                grid_j, rank_j = batch[j]
+
+                # Ensure grid_si holds the grid with the higher rank.
+                if rank_i > rank_j:
+                    distance = rank_i - rank_j
+                    examples.append((grid_i, grid_j, distance))
+                else:
+                    distance = rank_j - rank_i
+                    examples.append((grid_j, grid_i, distance))
+
         return examples
                 
     def __len__(self):
@@ -56,7 +65,7 @@ class BackwardTraversalDataset(Dataset):
                 "grid_sj":self.dataset[idx][1],
                 "distance":self.dataset[2]}
 
-class BackwardTraversal:
+class BackwardTraversal:#
     def __init__(self,
                  session,
                  model,
