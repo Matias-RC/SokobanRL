@@ -61,9 +61,11 @@ class BackwardTraversalDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        return {"grid_si":self.dataset[idx][0],
-                "grid_sj":self.dataset[idx][1],
-                "distance":self.dataset[idx][2]}
+        return {
+    "grid_si": torch.tensor(self.dataset[idx][0], dtype=torch.long),  
+    "grid_sj": torch.tensor(self.dataset[idx][1], dtype=torch.long),  
+    "distance": torch.tensor(self.dataset[idx][2], dtype=torch.long),  
+    "shape": self.dataset[idx][0].shape[0]   }
 
 class BackwardTraversal:#
     def __init__(self,

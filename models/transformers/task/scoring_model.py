@@ -77,11 +77,11 @@ class TransformerEncoderForScoring(nn.Module):
 
     def structured_forward(self, x: torch.Tensor) -> torch.Tensor:
 
-        encoder_output = self.encoder(x)
+        activations, attn_weights = self.encoder(x)
 
-        y_hat = self.regressor(encoder_output) # regressor is a feed forward network
+        y_hat = self.regressor(activations) # regressor is a feed forward network
 
-        return y_hat, encoder_output
+        return y_hat, activations
     
     def to_tensor(self, instance) -> torch.Tensor:
         # Convert instance to tensor similar to the collate function in the dataloader

@@ -9,7 +9,7 @@ from models.dreamcoder.q_uniform import q_uniform
 from managers.sokoban_manager import SokobanManager
 from models.q_models.delta_scorer import DeltaScorer
 
-NUM_TASKS = 3
+NUM_TASKS = 2
 GRID_SIZE = 6
 
 actions_for_sokoban = [

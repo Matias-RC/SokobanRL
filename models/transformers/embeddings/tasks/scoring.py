@@ -34,7 +34,7 @@ class ScoringEmbedding(nn.Module):
             device=device
         )
         
-        self.layer_norm = nn.LayerNorm(hidden_dim)
+        self.layer_norm = nn.LayerNorm(hidden_dim,device=device)
 
     def forward(self, batch: Dict[str, Tensor]) -> Tensor:
         """
