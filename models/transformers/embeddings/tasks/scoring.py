@@ -96,3 +96,22 @@ class ScoringEmbedding(nn.Module):
         position_ids = torch.arange(input_ids.shape[1], device=grid.device).unsqueeze(0).repeat(batch_size, 1)
 
         return {"input_ids": input_ids, "position_ids": position_ids}
+
+"""
+    def forward(self, batch: Dict[str, Tensor]) -> Tensor:
+        
+        input_ids = batch["input_ids"].to(self.device).flatten(1)
+        #position_ids = batch["position_ids"]
+        #types_ids = batch["types_ids"]
+        
+        token_embeddings = self.states_actions_embd(input_ids)
+        #types_embeddings = self.type_sentence_embedding(types_ids)
+        #position_embeddings = self.position_embedding(position_ids)
+        
+        embeddings = token_embeddings.to(self.dtype) #+ types_embeddings + position_embeddings 
+        
+        #embeddings = self.layer_norm(embeddings)
+        #embeddings *= self.embedding_norm_scalar
+
+        return embeddings
+"""
