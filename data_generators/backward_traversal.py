@@ -5,7 +5,7 @@ import random
 from managers.inverse_manager import InvertedNode
 
 class BackwardTraversalDataset(Dataset):
-    def __init__(self, dataset,one_batch = True):
+    def __init__(self, dataset,usage_quota=1):
         """
         Args:
             dataset (list): List of batches
@@ -16,27 +16,45 @@ class BackwardTraversalDataset(Dataset):
         """
         super().__init__()  # Ensures compatibility with torch Dataset
         self.dataset = []
-        if one_batch:
-            batch = dataset[0]
-            for example in batch:
-                grid, rank = example
-                grid = torch.tensor(grid, dtype=torch.float32)
-                rank = torch.tensor(rank, dtype=torch.float32)
-                self.dataset.append((grid, rank))
-        else:
-            for batch in dataset:
-                for example in batch:
-                    grid, rank = example
-                    grid = torch.tensor(grid, dtype=torch.float32)
-                    rank = torch.tensor(rank, dtype=torch.float32)
-                    self.dataset.append((grid, rank))
+        self.usage_quota = usage_quota
 
+        number_batches = len(dataset)
+        for b in range(number_batches):
+            batch = dataset[b]
+            examples = self.contruct_examples(batch)
+            self.dataset = self.dataset + examples
+    
+    def contruct_examples(self,trajectory):
+        examples = []
+        n = len(trajectory)
+        if n < 2:
+            return None  # Not enough states to compare
+        
+        # Determine the number of states to use based on usage_quota.
+        num_states = max(2, int(n * self.usage_quota))
+        # Select evenly spaced indices from the trajectory.
+        indices = np.linspace(0, n - 1, num_states, dtype=int)
+        selected_states = [trajectory[i][0] for i in indices]
+        selected_rankings = [trajectory[i][1] for i in indices]
+        #states_tensor = torch.stack(selected_states).to(self.device)
 
+        for i in range(len(indices) - 1):
+            for j in range(i + 1, len(indices)):
+                distance = selected_rankings[j] - selected_rankings[i]  # Use the difference in trajectory indices as a weight.
+                #if distance > 0: #Slack
+                examples.append((torch.tensor(selected_states[i], dtype=torch.float32),
+                                torch.tensor(selected_states[j], dtype=torch.float32),
+                                torch.tensor(distance, dtype=torch.float32)) ) #grid_si,grid_sj,distance
+        
+        return examples
+                
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        return self.dataset[idx]
+        return {"grid_si":self.dataset[idx][0],
+                "grid_sj":self.dataset[idx][1],
+                "distance":self.dataset[2]}
 
 class BackwardTraversal:
     def __init__(self,
@@ -69,7 +87,7 @@ class BackwardTraversal:
             states_solution, action_solution = end_node.statesList(), end_node.trajectory()
             terminal, initialState = states_solution[-1], states_solution[0]
             batch = self.generate_batch(end_node, task=task)
-            batch_dataset_torch = BackwardTraversalDataset([batch], one_batch=True)
+            batch_dataset_torch = BackwardTraversalDataset([batch])
             self.datasets.append(batch_dataset_torch)
         
         return self.datasets

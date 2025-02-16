@@ -42,6 +42,7 @@ class Node:
 
 class SokobanManager:
     def __init__(self):
+        grid_dims =  None
         self.posWalls = None
         self.posGoals = None
 
@@ -113,7 +114,35 @@ class SokobanManager:
         return condition, new_node
     
     def initializer(self,initial_state):
+        self.grid_dims = initial_state.shape
         self.posWalls = self.PosOfWalls(initial_state)
         self.posGoals = self.PosOfGoals(initial_state)
         node = Node(state=(self.PosOfPlayer(initial_state), self.PosOfBoxes(initial_state)))
         return node
+    
+    def grid_reconstruct(self, state):
+        posPlayer, posBox = state
+        y, x = self.grid_dims
+        grid = np.zeros(self.grid_dims)
+
+        for i in range(y):
+            for j in range(x):
+                pos = (i, j)
+                if pos == posPlayer:
+                    if pos in self.posGoals:
+                        grid[pos] = 6
+                    else:
+                        grid[pos] = 2
+                elif pos in self.posWalls:
+                    grid[pos] = 1
+                elif pos in posBox:
+                    if pos in self.posGoals:
+                        grid[pos] = 5
+                    else:
+                        grid[pos] = 3
+                elif pos in self.posGoals:
+                    grid[pos] = 4
+                else:
+                    grid[pos] = 0
+                
+                

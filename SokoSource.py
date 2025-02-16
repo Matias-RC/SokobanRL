@@ -204,7 +204,22 @@ def RandomPlacePlayer(empty_positions, grid, seed=None):
     grid[empty_positions[0][0],empty_positions[0][1]] = 2
     return grid
 
-
+def final_state_grid(self, initial_grid, final_player_pos, final_pos_boxes):
+    '''Creates the final grid from the initial grid and the final player and box positions.'''
+    final_grid = np.copy(initial_grid) #copy
+    final_grid[(final_grid == 2) | (final_grid == 3) | (final_grid == 5) | (final_grid == 6)] = 0 #reset
+    
+    if final_player_pos in self.posGoals:
+        final_grid[final_player_pos] = 6  # Player on Button
+    else:
+        final_grid[final_player_pos] = 2  # Normal Player
+    for box in list(final_pos_boxes):
+        if box in self.posGoals:
+            final_grid[box] = 5  # Box on Button
+        else:
+            final_grid[box] = 3  # Normal Box
+    
+    return final_grid
 """
 ----------------------------------------------------------------------
 More utils:

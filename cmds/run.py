@@ -28,7 +28,6 @@ session_1 = [
 ]
 
 curriculum = Curriculum(
-
     sessions={
         "S1": session_1
     },
