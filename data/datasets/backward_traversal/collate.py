@@ -10,15 +10,21 @@ def collate_fn(batch):
 
     B, N = len(batch), max_shape
 
-    grid_padded = torch.stack([
-        F.pad(item["grid"], (0, pad, 0, pad), value=0)
+    grid_si_padded = torch.stack([
+        F.pad(item["grid_si"], (0, pad, 0, pad), value=0)
         for item, pad in zip(batch, padding)
     ])
-    grid_padded = grid_padded.squeeze(-1)
+    grid_si_padded = grid_si_padded.squeeze(-1)
+
+    grid_sj_padded = torch.stack([
+        F.pad(item["grid_sj"], (0, pad, 0, pad), value=0)
+        for item, pad in zip(batch, padding)
+    ])
+    grid_sj_padded = grid_sj_padded.squeeze(-1)
 
     padding_masks = torch.stack([
         F.pad(
-            torch.ones_like(item["grid"], dtype=torch.bool), (0, pad, 0, pad), value=False
+            torch.ones_like(item["grid_si"], dtype=torch.bool), (0, pad, 0, pad), value=False
         )
         for item, pad in zip(batch, padding)
     ])
@@ -27,7 +33,7 @@ def collate_fn(batch):
 
     shapes_squared = torch.tensor([item["shape"] ** 2 for item in batch])
 
-    labels = torch.stack([ item["rank"]  for item in batch ] )
+    distance = torch.stack([ item["distance"]  for item in batch ] )
 
     position = torch.arange(max_shape**2).unsqueeze(0).expand(len(batch), -1)
     n = torch.tensor(max_shape**2).repeat(len(batch)) ** 0.5
@@ -36,8 +42,8 @@ def collate_fn(batch):
     pos_j = position % n_expanded
 
         
-    o  = {
-        "grid": grid_padded.unsqueeze(-1),
+    o_i  = {
+        "input_ids": grid_si_padded.unsqueeze(-1),
         "batch_mask": {
             "attention_mask": attention_mask == 1 ,  # attention_mask,
             "mask": None, #{"AB": window_mask_AB,
@@ -45,9 +51,24 @@ def collate_fn(batch):
                     #"CA": window_mask_CA,
                     #"QK": window_mask_QK},
         },
-        "label": labels,
+        "distance": distance,
         "shape": shapes_squared,
         "pos_i": pos_i.reshape(B, N, N, 1),
         "pos_j": pos_j.reshape(B, N, N, 1),
     }
-    return o
+
+    o_j  = {
+        "input_ids": grid_sj_padded.unsqueeze(-1),
+        "batch_mask": {
+            "attention_mask": attention_mask == 1 ,  # attention_mask,
+            "mask": None, #{"AB": window_mask_AB,
+                    #"BC": window_mask_BC,
+                    #"CA": window_mask_CA,
+                    #"QK": window_mask_QK},
+        },
+        "distance": distance,
+        "shape": shapes_squared,
+        "pos_i": pos_i.reshape(B, N, N, 1),
+        "pos_j": pos_j.reshape(B, N, N, 1),
+    }
+    return o_i,o_j

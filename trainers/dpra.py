@@ -9,7 +9,8 @@ import random
 from SokoSource import final_state_grid
 #from data_generators.collate_fn import collate_fn
 from torch.utils.data import Dataset, DataLoader
-from src.loss_function import pairwise_loss
+from src.loss_function.pairwise_loss import PairwiseLoss
+from data.datasets.backward_traversal.collate import collate_fn as backward_traversal_collate_fn
 
 
 
@@ -19,23 +20,25 @@ class DPRA:
     def __init__(self, device: str = "cpu"):
         
         self.optimizer = optim.AdamW
-        self.loss = pairwise_loss
+        self.loss = PairwiseLoss
         self.lr = 1e-3
-        self.epochs = 100
-        self.batch_size = 32
+        self.epochs = 5
+        self.batch_size = 2
         self.device = torch.device(device if torch.cuda.is_available() else "cpu")
-        #self.collate_fn = collate_fn
+        self.collate_fn = backward_traversal_collate_fn
 
     def do(self, dataset, model):
 
         learner = model.get_learner()
         learner.is_training = True
-
-        dataloader = DataLoader(dataset,
-                                shuffle = True,
-                                collate_fn=self.collate_fn)
         
-        self.fit(dataset, learner)
+        for session in dataset:
+            dataloader = DataLoader(session,
+                                shuffle = False,
+                                batch_size=self.batch_size,
+                                collate_fn=self.collate_fn)
+            
+            self.fit(dataloader, learner)
 
         learner.is_training = False
 
@@ -44,24 +47,27 @@ class DPRA:
     def fit(self, dataloader, learner):
 
         optimizer = self.optimizer(learner.parameters(), lr=self.lr)
-        loss_function = self.loss()
+        loss_function = PairwiseLoss()
+
+        learner = learner.train()
 
         for epoch in range(self.epochs):
             # Train model
+            print(epoch)
             for batch in dataloader: # batch is a tuple of (example, signal) -> pairwise_batch is a tuple of (example1, example2, label) where label is signal1 > signal2
+                batch_i,batch_j = batch
                 # Forward pass
-                input_si = {**{"attention_mask":batch["attention_mask"]}, **{"x":batch["si"]}  }
-                input_sj = {**{"attention_mask":batch["attention_mask"]}, **{"x":batch["sj"]}  }
-                output_si = learner(input_si)
-                output_sj = learner(input_sj)
+                output_si = learner(batch_i)
+                output_sj = learner(batch_j)
                 # Compute loss
-                loss = loss_function(output_si,output_sj,batch)
+                loss = loss_function(output_si[0],output_sj[0],batch_i["distance"])
                 # Backward pass
                 loss.backward()
                 # Update weights
                 optimizer.step()
                 # Zero gradients
                 optimizer.zero_grad()
+        
     
     def pairwise_loss(self, i,j, ij_distance):
         """

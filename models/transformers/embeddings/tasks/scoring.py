@@ -33,22 +33,22 @@ class ScoringEmbedding(nn.Module):
                                                embedding_dim=hidden_dim,
                                                dtype=dtype, device=device)  
         
-        self.layer_norm = nn.LayerNorm(hidden_dim)
+        self.layer_norm = nn.LayerNorm(hidden_dim,device=device)
 
 
     def forward(self, batch: Dict[str, Tensor]) -> Tensor:
         
-        input_ids = batch["input_ids"]
-        position_ids = batch["position_ids"]
-        types_ids = batch["types_ids"]
+        input_ids = batch["input_ids"].to(self.device).flatten(1)
+        #position_ids = batch["position_ids"]
+        #types_ids = batch["types_ids"]
         
         token_embeddings = self.states_actions_embd(input_ids)
-        types_embeddings = self.type_sentence_embedding(types_ids)
-        position_embeddings = self.position_embedding(position_ids)
+        #types_embeddings = self.type_sentence_embedding(types_ids)
+        #position_embeddings = self.position_embedding(position_ids)
         
-        embeddings = token_embeddings + types_embeddings + position_embeddings 
+        embeddings = token_embeddings.to(self.dtype) #+ types_embeddings + position_embeddings 
         
-        embeddings = self.layer_norm(embeddings)
-        embeddings *= self.embedding_norm_scalar
+        #embeddings = self.layer_norm(embeddings)
+        #embeddings *= self.embedding_norm_scalar
 
         return embeddings

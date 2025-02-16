@@ -107,7 +107,7 @@ class BackboneTransformerEncoder(nn.Module):
                 )
             else:
                 hidden_state, attention_weights = layer(
-                    hidden_state=hidden_state, batch_mask=batch["batch_mask"]
+                    hidden_state=hidden_state, batch_mask=None#batch["batch_mask"]
                 )
             all_attention_weights.append(attention_weights)
 
