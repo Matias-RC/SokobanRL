@@ -63,7 +63,7 @@ class BackwardTraversalDataset(Dataset):
     def __getitem__(self, idx):
         return {"grid_si":self.dataset[idx][0],
                 "grid_sj":self.dataset[idx][1],
-                "distance":self.dataset[2]}
+                "distance":self.dataset[idx][2]}
 
 class BackwardTraversal:#
     def __init__(self,

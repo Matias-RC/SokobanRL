@@ -7,7 +7,7 @@ import numpy as np
 from collections import defaultdict
 import random
 from SokoSource import final_state_grid
-#from data_generators.collate_fn import collate_fn
+from data_generators.collate_fn import collate_fn
 from torch.utils.data import Dataset, DataLoader
 from src.loss_function import pairwise_loss
 
@@ -21,10 +21,10 @@ class DPRA:
         self.optimizer = optim.AdamW
         self.loss = pairwise_loss
         self.lr = 1e-3
-        self.epochs = 100
+        self.epochs = 1
         self.batch_size = 32
         self.device = torch.device(device if torch.cuda.is_available() else "cpu")
-        #self.collate_fn = collate_fn
+        self.collate_fn = collate_fn
 
     def do(self, dataset, model):
 
@@ -44,7 +44,7 @@ class DPRA:
     def fit(self, dataloader, learner):
 
         optimizer = self.optimizer(learner.parameters(), lr=self.lr)
-        loss_function = self.loss()
+        loss_function = self.loss
 
         for epoch in range(self.epochs):
             # Train model
@@ -63,16 +63,7 @@ class DPRA:
                 # Zero gradients
                 optimizer.zero_grad()
     
-    def pairwise_loss(self, i,j, ij_distance):
-        """
-        Compute the pairwise loss of the model with the succesful trajectories
-        Theory:
-        P_{i,j} =  1/(1+exp(-(M(s_i)-M(s_j))))
-        \mathcal{L}_{pair} = -[y\log(P_{i,j})+(1-y)\log(1-P_{i,j})]
-        y  = (1 if $r(x_i) > r(x_j)$ and 0 otherwise)
-        """
-        return - math.log(1/(1+math.exp(-(i-j))))*ij_distance # Entropy of i because  we assume it is the better state relative to j and that y = 1
-    
+
     def trainWithTrajectory(self, trajectory, usage_quota=1):
         """
         Train the model using a successful trajectory that follows a near-optimal path.
