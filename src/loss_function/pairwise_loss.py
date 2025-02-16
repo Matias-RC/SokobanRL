@@ -17,5 +17,5 @@ class PairwiseLoss(nn.Module):
         Returns:
         Tensor: Computed pairwise loss
         """
-        loss = -torch.log(1 / (1 + torch.exp(-(output_si - output_sj)))) * ij_distance
+        loss = -torch.log(1 / (1 + torch.exp(-(output_si - output_sj)))) * (ij_distance > 0) # + 
         return loss.mean()  # Mean reduction for batch training

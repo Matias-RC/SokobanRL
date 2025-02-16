@@ -32,8 +32,8 @@ class DPRA:
         learner = model.get_learner()
         learner.is_training = True
         
-        for session in dataset:
-            dataloader = DataLoader(session,
+        for task in dataset: # Change it should only be for the current session 
+            dataloader = DataLoader(task,
                                 shuffle = False,
                                 batch_size=self.batch_size,
                                 collate_fn=self.collate_fn)
@@ -122,4 +122,5 @@ class DPRA:
             avg_loss.backward()
             optimizer.step()
             return avg_loss.item()
+            
         return None

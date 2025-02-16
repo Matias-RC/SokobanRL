@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-from models.transformers.embeddings.theoretical import TheoreticalEmbedding
 from models.transformers.embeddings.learnable import LearnableEmbedding
 
 class BackboneEmbedding(nn.Module):
@@ -19,16 +18,7 @@ class BackboneEmbedding(nn.Module):
     ):
         super(BackboneEmbedding, self).__init__()
 
-        self.embedding_type = embedding_type
-        if self.embedding_type == "theoretical":
-            self.embedding = TheoreticalEmbedding(
-                hidden_dim=hidden_dim,
-                embedding_norm_scalar=embedding_norm_scalar,
-                mode=mode,
-                dtype=dtype,
-                device=device,
-            )
-        elif self.embedding_type == "learnable":
+        if embedding_type == "learnable":
             self.embedding = LearnableEmbedding(
                 hidden_dim=hidden_dim,
                 embedding_norm_scalar=embedding_norm_scalar,

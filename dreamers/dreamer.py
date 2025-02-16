@@ -18,6 +18,8 @@ class Dreamer:
 
     def do(self, session, model):
         
-        new_model = self.fantasizer.do(session, model)
+        new_model = model #self.replayer.do(session, model)
+
+        new_model = self.fantasizer.do(session, new_model)
         
         return new_model

@@ -12,21 +12,22 @@ class ScoringEmbedding(nn.Module):
                 dtype: torch.dtype = torch.float32, 
                 device: torch.device = None,
                 vocab_states_size: int = 6, # wall, box, goal, player, box_on_goal, player_on_goal
+                vocab_actions_size: int = 4,
                 position_size: int = 200): # max length of input (e.g., grid + CLS)
         
         super(ScoringEmbedding, self).__init__()
 
         self.hidden_dim = hidden_dim
-        self.embedding_norm_scalar = embedding_norm_scalar
         self.dtype = dtype
         self.device = device
 
-        self.states_embd = nn.Embedding(
-            num_embeddings=vocab_states_size + 2, # +2 for CLS and padding
+        self.states_actions_embd = nn.Embedding(
+            num_embeddings=vocab_states_size + vocab_actions_size + 2, # +2 for CLS and padding
             embedding_dim=hidden_dim,
             dtype=dtype,
             device=device
         )
+
         self.position_embedding = nn.Embedding(
             num_embeddings=position_size, # max length of a flattened input
             embedding_dim=hidden_dim,
@@ -34,7 +35,6 @@ class ScoringEmbedding(nn.Module):
             device=device
         )
         
-        self.layer_norm = nn.LayerNorm(hidden_dim,device=device)
 
     def forward(self, batch: Dict[str, Tensor]) -> Tensor:
         
@@ -48,7 +48,4 @@ class ScoringEmbedding(nn.Module):
         
         embeddings = token_embeddings.to(self.dtype) #+ types_embeddings + position_embeddings 
         
-        #embeddings = self.layer_norm(embeddings)
-        #embeddings *= self.embedding_norm_scalar
-
         return embeddings
