@@ -5,69 +5,8 @@ import random
 from managers.inverse_manager import InvertedNode
 from SokoSource  import PriorityQueue
 import math
+from data.datasets.backward_traversal.dataset import BackwardTraversalDataset
 
-class BackwardTraversalDataset(Dataset):
-    def __init__(self, dataset, usage_quota=1):
-        """
-        Args:
-            dataset (list): List of batches
-            batch (list): List of tuples of the form (grid, rank)
-            one_batch (bool): If True, the dataset is a single batch
-        Output:
-            A dataset of the form (grid_i, grid_j, rank) as torch tensors
-        """
-        super().__init__()  # Ensures compatibility with torch Dataset
-        self.dataset = []
-
-        number_batches = len(dataset)
-        for b in range(number_batches):
-            batch = dataset[b]
-            examples = self.contruct_examples(batch)
-            self.dataset = self.dataset + examples
-    
-    def contruct_examples(self, batch):
-        examples = []
-        n = len(batch)
-        indices = list(range(n))
-        random.shuffle(indices)  
-        used = [False] * n     
-
-        for i in indices:
-            if used[i]:
-                continue 
-
-            grid_i, rank_i = batch[i]
-            # Find all candidate indices that are unpaired and have a different rank.
-            candidate_indices = [
-                j for j in indices
-                if not used[j] and j != i and batch[j][1] != rank_i
-            ]
-
-            if candidate_indices:
-                j = random.choice(candidate_indices)
-                used[i] = True
-                used[j] = True
-                grid_j, rank_j = batch[j]
-
-                # Ensure grid_si holds the grid with the higher rank.
-                if rank_i > rank_j:
-                    distance = rank_i - rank_j
-                    examples.append((grid_i, grid_j, distance))
-                else:
-                    distance = rank_j - rank_i
-                    examples.append((grid_j, grid_i, distance))
-
-        return examples
-                
-    def __len__(self):
-        return len(self.dataset)
-
-    def __getitem__(self, idx):
-        return {
-    "grid_si": torch.tensor(self.dataset[idx][0], dtype=torch.long),  
-    "grid_sj": torch.tensor(self.dataset[idx][1], dtype=torch.long),  
-    "distance": torch.tensor(self.dataset[idx][2], dtype=torch.long),  
-    "shape": self.dataset[idx][0].shape[0]   }
 
 class BackwardTraversal:#
     def __init__(self,
@@ -92,15 +31,16 @@ class BackwardTraversal:#
         self.inverseManager = inverseManager
         self.batchSize = batchSize
         self.drawSize = drawSize
+
         self.datasets = []
 
     def do(self, session, model):
         for task in session:  # a session is a set of tasks
             end_node = task.solution
-            states_solution, action_solution = end_node.statesList(), end_node.trajectory()
+            states_solution, _ = end_node.statesList(), end_node.trajectory()
             terminal, initialState = states_solution[-1], states_solution[0]
             batch = self.generate_batch(end_node, task=task)
-            batch_dataset_torch = BackwardTraversalDataset([batch])
+            batch_dataset_torch = BackwardTraversalDataset(batch)
             self.datasets.append(batch_dataset_torch)
         
         return self.datasets
@@ -127,7 +67,7 @@ class BackwardTraversal:#
                                 initial_grid=task.initial_state,
                                 final_player_pos=node.state[0],
                                 final_pos_boxes=node.state[1])
-                example = (game_grid, node.rank)
+                example = {"grid": game_grid, "rank": node.rank}
                 batch.append(example)
                 if node.children:
                     new_childs.extend(node.children)

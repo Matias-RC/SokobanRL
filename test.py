@@ -18,7 +18,7 @@ def create_environment(board_shape, posWalls, posGoals, key):
     for r, c in posGoals:
         board[r, c] = 4
     player_pos, box_positions = key
-    for r, c in box_positions:
+    for r, c in list(box_positions):
         if board[r, c] == 4:
             board[r, c] = 5
         else:
@@ -107,7 +107,7 @@ for action in initial_solution:
 #for t in trajectories_cache:
 #    print(t.trajectory())
 inverseManager = InversedSokobanManager()
-endNode = InvertedNode(((1,3),((1,4))))
+endNode = InvertedNode(((1,3),((1,4),)))
 
 model  =  DummyDeltaScorer(instanceWrapper.posGoals,instanceWrapper.posWalls,grid.shape)
 
@@ -126,11 +126,12 @@ def backward_traversal_worst_paths(inverseManager, end_node, initial_grid, max_d
             conditition,  new_node = inverseManager.legalInvertedUpdate(m,node.state,node)
             if conditition and new_node.state not in seen_states:
                 node.children.append(new_node)
-                frontier.push(new_node,(-model.m(new_node.state)+1)*20+len(new_node.trayectory()))
+                frontier.push(new_node,(model.m(new_node.state, m))*20+len(new_node.trajectory()))
         depth -= 1
     print("Count:", frontier.Count)
     return frontier, end_node
 
 frontier, end_node = backward_traversal_worst_paths(inverseManager,endNode, grid, 5,100000)
 
-print(frontier)
+while not frontier.isEmpty():
+    print(frontier.pop().statesList())

@@ -20,7 +20,7 @@ class DPRA:
     def __init__(self, device: str = "cpu"):
         
         self.optimizer = optim.AdamW
-        self.loss = PairwiseLoss
+        self.loss = PairwiseLoss()
         self.lr = 1e-3
         self.epochs = 5
         self.batch_size = 2
@@ -34,10 +34,10 @@ class DPRA:
         
         for task in dataset: # Change it should only be for the current session 
             dataloader = DataLoader(task,
-                                shuffle = False,
-                                batch_size=self.batch_size,
-                                collate_fn=self.collate_fn)
-            
+                                    shuffle = False,
+                                    batch_size=self.batch_size,
+                                    collate_fn=self.collate_fn)
+                
             self.fit(dataloader, learner)
 
         learner.is_training = False
@@ -47,20 +47,16 @@ class DPRA:
     def fit(self, dataloader, learner):
 
         optimizer = self.optimizer(learner.parameters(), lr=self.lr)
-        loss_function = PairwiseLoss()
-
         learner = learner.train()
 
         for epoch in range(self.epochs):
             # Train model
             print(epoch)
             for batch in dataloader: # batch is a tuple of (example, signal) -> pairwise_batch is a tuple of (example1, example2, label) where label is signal1 > signal2
-                batch_i,batch_j = batch
                 # Forward pass
-                output_si = learner(batch_i)
-                output_sj = learner(batch_j)
+                output, _ = learner(batch)
                 # Compute loss
-                loss = loss_function(output_si[0],output_sj[0],batch_i["distance"])
+                loss = self.loss(output, batch["label"])
                 # Backward pass
                 loss.backward()
                 # Update weights

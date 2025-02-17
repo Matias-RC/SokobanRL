@@ -4,33 +4,34 @@ import numpy as np
 import random
 
 class BackwardTraversalDataset(Dataset):
-    def __init__(self,dataset,one_batch=True):
+    def __init__(self, batch):
         """
         Args:
             dataset (list): List of batches
             batch (list): List of tuples of the form (grid, rank)
             one_batch (bool): If True, the dataset is a single batch
         Output:
-            A dataset of the form (grid, rank) as torch tensors
+            A dataset of the form (grid_i, grid_j, rank) as torch tensors
         """
-        if one_batch:
-            batch = dataset[0]
-            for example in batch:
-                grid, rank = example
-                grid = torch.tensor(grid, dtype=torch.float32)
-                rank = torch.tensor(rank, dtype=torch.float32)
-                self.dataset.append((grid, rank))
-        else:
-            for batch in dataset:
-                for example in batch:
-                    grid, rank = example
-                    grid = torch.tensor(grid, dtype=torch.float32)
-                    rank = torch.tensor(rank, dtype=torch.float32)
-                    self.dataset.append((grid, rank))
+        super().__init__()  # Ensures compatibility with torch Dataset
+        
+        self.dataset = self.contruct_examples(batch)
+    
+    def contruct_examples(self, batch):
+        n = len(batch)
+        indices = list(range(n))
+        random.shuffle(indices)   
 
+        examples = [batch[i] for i in indices]
+
+        return examples
+                
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        grid, rank = self.dataset[idx]
-        return {"grid": grid, "rank": rank}
+        return {
+            "grid": torch.tensor(self.dataset[idx]["grid"], dtype=torch.long),  
+            "rank": torch.tensor(self.dataset[idx]["rank"], dtype=torch.long),  
+            "shape": self.dataset[idx]["grid"].shape[0]
+        }
