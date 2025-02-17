@@ -25,9 +25,12 @@ class PairwiseLoss(nn.Module):
         ij_distance = rank.unsqueeze(1) - rank.unsqueeze(0)
         ij_label = (ij_distance < 0).float()
 
-        # Upper triangular mask (witout diagonal)
-        tri_u_mask = (torch.triu(torch.ones_like(ij_label), diagonal=1) == 1)
+        # # Upper triangular mask (witout diagonal)
+        # tri_u_mask = (torch.triu(torch.ones_like(ij_label), diagonal=1) == 1)
 
-        loss = self.cross_entropy(ij_output[tri_u_mask], ij_label[tri_u_mask])
+        # loss = self.cross_entropy(ij_output[tri_u_mask], ij_label[tri_u_mask])7
+
+        loss = self.cross_entropy(ij_output, ij_label)
+
 
         return loss  # Mean reduction for batch training

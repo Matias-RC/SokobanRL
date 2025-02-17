@@ -26,17 +26,17 @@ class SequenceRegressor(nn.Module):
         self.out_proj = nn.Linear(
             hidden_dim, output_dim, bias=bias, dtype=dtype, device=device
         )
-        
-
+    
         self.init_weights()
 
     def forward(self, features):
-        x = self.dropout(features)
+        x = self.dropout(features[:, 0, :])
         x = self.dense(x)
         x = self.activation(x)
         x = self.dropout(x)
         x = self.out_proj(x)
-        return x[:,0,:]
+
+        return x
 
     def init_weights(self):
         for name, param in self.named_parameters():

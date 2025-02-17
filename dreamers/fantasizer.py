@@ -2,7 +2,6 @@ import numpy as np
 from collections import defaultdict
 import random
 
-from trainers.dpra import DPRA
 from data_generators.backward_traversal import BackwardTraversal
 from trainers.dpra import DPRA
 

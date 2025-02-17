@@ -9,7 +9,7 @@ def collate_fn(batch):
     padding = [max_shape - item["shape"] for item in batch]
 
     B, N = len(batch), max_shape
-
+    
     grid_padded = torch.stack([
         F.pad(item["grid"], (0, pad, 0, pad), value=0)
         for item, pad in zip(batch, padding)
@@ -36,7 +36,6 @@ def collate_fn(batch):
     pos_i = position // n_expanded
     pos_j = position % n_expanded
 
-        
     o  = {
         "input_ids": grid_padded.unsqueeze(-1),
         "batch_mask": {

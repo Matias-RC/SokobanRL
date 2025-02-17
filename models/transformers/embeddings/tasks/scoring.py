@@ -28,24 +28,28 @@ class ScoringEmbedding(nn.Module):
             device=device
         )
 
-        self.position_embedding = nn.Embedding(
-            num_embeddings=position_size, # max length of a flattened input
-            embedding_dim=hidden_dim,
+        self.projection = nn.Linear(
+            in_features=hidden_dim+2,
+            out_features=hidden_dim,
             dtype=dtype,
-            device=device
-        )
+            device=device)
         
 
     def forward(self, batch: Dict[str, Tensor]) -> Tensor:
         
         input_ids = batch["input_ids"].to(self.device).flatten(1)
-        #position_ids = batch["position_ids"]
-        #types_ids = batch["types_ids"]
+        pos_i = batch["pos_i"].to(self.device).flatten(1)
+        pos_j = batch["pos_j"].to(self.device).flatten(1)
         
         token_embeddings = self.states_actions_embd(input_ids)
-        #types_embeddings = self.type_sentence_embedding(types_ids)
-        #position_embeddings = self.position_embedding(position_ids)
         
-        embeddings = token_embeddings.to(self.dtype) #+ types_embeddings + position_embeddings 
-        
-        return embeddings
+        embeddings = torch.concat([
+            token_embeddings,
+            pos_i.unsqueeze(-1),
+            pos_j.unsqueeze(-1)
+        ],
+            dim=-1)
+
+        out_embedding = self.projection(embeddings)
+
+        return out_embedding

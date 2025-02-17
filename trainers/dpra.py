@@ -22,8 +22,8 @@ class DPRA:
         self.optimizer = optim.AdamW
         self.loss = PairwiseLoss()
         self.lr = 1e-3
-        self.epochs = 100
-        self.batch_size = 64
+        self.epochs = 1000
+        self.batch_size = 2
         self.device = torch.device(device if torch.cuda.is_available() else "cpu")
         self.collate_fn = backward_traversal_collate_fn
         self.verbose = verbose
@@ -62,8 +62,8 @@ class DPRA:
                 total_loss += loss.item()
                 batch_count += 1
 
-                if self.verbose:
-                    print(f"  Batch {i+1}: Loss = {loss.item():.4f}")
+                # if self.verbose:
+                #     print(f"  Batch {i+1}: Loss = {loss.item():.4f}")
 
                 loss.backward()
                 optimizer.step()

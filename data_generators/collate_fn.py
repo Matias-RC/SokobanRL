@@ -55,5 +55,8 @@ def collate_fn(batch):
     batch_attention_mask = torch.stack(attention_mask, dim=0)
     batch_distance = torch.tensor(distance_list, dtype=torch.float)
     
-    return {"si": batch_si, "sj": batch_sj, "attention_mask": batch_attention_mask, "distance": batch_distance}
+    return {"si": batch_si,
+            "sj": batch_sj,
+            "attention_mask": batch_attention_mask,
+            "distance": batch_distance}
 

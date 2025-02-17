@@ -8,7 +8,7 @@ class DeltaScorer:
         self.library = library
         if scorer == "transformer":
             self.scorer = TransformerEncoderForScoring(hidden_dim=64,
-                                                       num_layers=1,
+                                                       num_layers=2,
                                                        num_heads=1,
                                                        embedding_norm_scalar=1,
                                                        use_norm=False,
