@@ -8,7 +8,7 @@ sys.path.append(".")
 from models.transformers.embeddings.backbone_embedding import BackboneEmbedding
 from models.transformers.layers.backone_layer import BackboneTransformerLayer
 
-class BackboneTransformerEncoder(nn.Module):
+class BackboneTransformerDecoder(nn.Module):
     def __init__(
         self,
         hidden_dim: int,
@@ -29,7 +29,7 @@ class BackboneTransformerEncoder(nn.Module):
         max_length: int = 514
     ):
 
-        super(BackboneTransformerEncoder, self).__init__()
+        super(BackboneTransformerDecoder, self).__init__()
 
         self.share_layers = share_layers
         self.hidden_dim = hidden_dim
@@ -39,17 +39,17 @@ class BackboneTransformerEncoder(nn.Module):
         self.attention_type = attention_type
 
         # Initialize embedding layer
-        self.embedding = BackboneEmbedding(
-            hidden_dim=hidden_dim,
-            embedding_norm_scalar=embedding_norm_scalar,
-            mode=mode,
-            dtype=dtype,
-            embedding_type=embedding_type,
-            device=device,
-            is_edge=(attention_type == "triangular"),
-            num_embeddings=num_embeddings,
-            max_length=max_length
-        )
+        #self.embedding = BackboneEmbedding(
+        #    hidden_dim=hidden_dim,
+        #    embedding_norm_scalar=embedding_norm_scalar,
+        #    mode=mode,
+        #    dtype=dtype,
+        #    embedding_type=embedding_type,
+        #    device=device,
+        #    is_edge=(attention_type == "triangular"),
+        #    num_embeddings=num_embeddings,
+        #    max_length=max_length
+        #)
 
         # Initialize transformer layers
         if share_layers:
