@@ -3,6 +3,8 @@ from torch.utils.data import Dataset
 import numpy as np
 import random
 from managers.inverse_manager import InvertedNode
+from SokoSource  import PriorityQueue
+import math
 
 class BackwardTraversalDataset(Dataset):
     def __init__(self, dataset, usage_quota=1):
@@ -187,3 +189,23 @@ class BackwardTraversal:#
 
         print("Number of paths:", len(frontier))
         return frontier, end_node 
+    
+    def backward_traversal_worst_paths(self, end_node, initial_grid, max_depth, max_frontier_capacity=1000000000):
+        final_grid_state = self.inverseManager.initializer(initial_grid=initial_grid, end_node=end_node)
+        # Create an InvertedNode from end_node.
+        end_node = InvertedNode(state=end_node.state, parent=None, action=None, inversed_action=None, rank=0)
+
+        frontier = PriorityQueue()
+        frontier.push(end_node, 0)
+        depth = max_depth
+        seen_states = set()
+        while not frontier.isEmpty() and frontier.Count < max_frontier_capacity and depth > 0:
+            node = frontier.pop()
+            for m in self.agent.library:
+                conditition,  new_node = self.inverseManager.legalInvertedUpdate(m,node.state,node)
+                if conditition:
+                    node.children.append(new_node)
+                    frontier.push(new_node,(-self.model(new_node.state)+1)*20+len(new_node.trayectory()))
+            depth -= 1
+        print("Count:", frontier.Count)
+        return frontier, end_node
