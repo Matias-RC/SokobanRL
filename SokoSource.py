@@ -373,7 +373,7 @@ class PriorityQueue:
                 continue
             break
         heap[pos] = newitem
-        """Load puzzles and define the rules of sokoban"""
+
 
 def breadth_first_search(grid, Logic):
     """
