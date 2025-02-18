@@ -10,35 +10,51 @@ class Replayer:
 
         self.agent = agent
         if method == "pairwise_loss":
-            self.train_with_trayectory = self.trainWithTrajectory
+            self.train_with_trajectory = self.trainPairwise
         else:
-            self.train_with_trayectory = self.trainWithTrajectory
+            self.train_with_trajectory = self.trainPairwise
+        self.posGoals = None
 
-    def do(self, succesful_trajectories):
-        for t in succesful_trajectories:
-            loss = self.train_with_trayectory(t)
-            
-    @staticmethod
-    def trainWithTrajectory(model, trajectory, num_comparisons=10):
-        """
-        Train the model using a successful trajectory with a fixed number of comparisons.
+    def do(self, successful_trajectories, model, num_comparisons=10):
+        for t in successful_trajectories:
+            loss = self.train_with_trajectory(model, t, num_comparisons=num_comparisons)
+            print(f"Loss for trajectory: {loss}")
 
-        Parameters:
-          model: The PyTorch model to be trained.
-          trajectory: A list of state tensors representing the trajectory.
-          num_comparisons: The fixed number of state pairs to use for training.
+        return model
 
-        Returns:
-          The average pairwise loss for the trajectory.
-        """
+    def PosOfGoals(self, grid):
+        return tuple(tuple(x) for x in np.argwhere((grid == 4) | (grid == 5) | (grid == 6)))
+    
+    def matrix_state_grid(self, initial_grid, final_player_pos, final_pos_boxes):
+        '''Creates the final grid from the initial grid and the final player and box positions.'''
+        final_grid = np.copy(initial_grid) #copy
+        final_grid[(final_grid == 2) | (final_grid == 3) | (final_grid == 5) | (final_grid == 6)] = 0 #reset
+        
+        if final_player_pos in self.posGoals:
+            final_grid[final_player_pos] = 6  # Player on Button
+        else:
+            final_grid[final_player_pos] = 2  # Normal Player
+
+        for box in list(final_pos_boxes):
+            if box in self.posGoals:
+                final_grid[box] = 5  # Box on Button
+            else:
+                final_grid[box] = 3  # Normal Box
+        
+        return final_grid
+
+    def trainPairwise(self, model, task, num_comparisons=10):
+        self.posGoals = self.PosOfGoals(task.initial_state)
+        trajectory =  task.solution.statesList()
+
         n = len(trajectory)
         if n < 2:
-            return None  # Not enough states to compare
+            return None 
 
         # Ensure at least `num_comparisons` pairs can be formed.
         num_states = min(n, num_comparisons + 1)
         indices = np.linspace(0, n - 1, num_states, dtype=int)
-        selected_states = [trajectory[i] for i in indices]
+        selected_states = [self.matrix_state_grid(task.initial_state ,trajectory[i][0],trajectory[i][1]) for i in indices]
         states_tensor = torch.stack(selected_states).to(model.device)
 
         # Forward pass: get ranking scores M(s)
@@ -71,15 +87,3 @@ class Replayer:
 
         return None
 
-    def do(self, successful_trajectories, model, num_comparisons=10):
-        """
-        Perform training on a set of successful trajectories.
-
-        Parameters:
-          successful_trajectories: A list of trajectories (each a list of state tensors).
-          model: The PyTorch model to be trained.
-          num_comparisons: The fixed number of comparisons to use for each trajectory.
-        """
-        for t in successful_trajectories:
-            loss = self.train_with_trajectory(model, t, num_comparisons=num_comparisons)
-            print(f"Loss for trajectory: {loss}")
