@@ -6,7 +6,7 @@ import sys
 sys.path.append(".")
 
 from models.transformers.embeddings.backbone_embedding import BackboneEmbedding
-from models.transformers.layers.backone_layer import BackboneTransformerLayer
+from models.transformers.layers.backbone_layer import BackboneTransformerLayer
 
 class BackboneTransformerEncoder(nn.Module):
     def __init__(
