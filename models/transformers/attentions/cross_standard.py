@@ -4,7 +4,7 @@ import math
 from opt_einsum import contract
 import os
 
-class StandardCrossAttention(nn.Module):
+class CrossStandardAttention(nn.Module):
     def __init__(
         self,
         hidden_dim: int,
@@ -18,7 +18,7 @@ class StandardCrossAttention(nn.Module):
         is_cross_attention = True,
 
     ):
-        super(StandardCrossAttention, self).__init__()
+        super(CrossStandardAttention, self).__init__()
 
         self.hidden_dim = hidden_dim
         self.num_heads = num_heads

@@ -89,7 +89,7 @@ class BackboneTransformerDecoderLayer(nn.Module):
         for layer in self.layers:
             layer.gradient_checkpointing = True
     
-    def forward(self, batch: dict) -> torch.Tensor:
+    def forward(self, batch: dict = None, memory:torch.Tensor = None) -> torch.Tensor:
         input_embd = self.embedding(batch=batch)
         hidden_state = input_embd
         
