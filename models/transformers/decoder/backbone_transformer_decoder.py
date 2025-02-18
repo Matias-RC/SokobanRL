@@ -38,18 +38,18 @@ class BackboneTransformerDecoder(nn.Module):
         self.device = device
         self.attention_type = attention_type
 
-        # Initialize embedding layer
-        #self.embedding = BackboneEmbedding(
-        #    hidden_dim=hidden_dim,
-        #    embedding_norm_scalar=embedding_norm_scalar,
-        #    mode=mode,
-        #    dtype=dtype,
-        #    embedding_type=embedding_type,
-        #    device=device,
-        #    is_edge=(attention_type == "triangular"),
-        #    num_embeddings=num_embeddings,
-        #    max_length=max_length
-        #)
+        #embedding for decoder 
+        self.embedding = BackboneEmbedding(
+            hidden_dim=hidden_dim,
+            embedding_norm_scalar=embedding_norm_scalar,
+            mode=mode,
+            dtype=dtype,
+            embedding_type=embedding_type,
+            device=device,
+            is_edge=(attention_type == "triangular"),
+            num_embeddings=num_embeddings,
+            max_length=max_length
+        )
 
         # Initialize transformer layers
         if share_layers:

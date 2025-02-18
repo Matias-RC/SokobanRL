@@ -18,7 +18,8 @@ class BackboneAttention(nn.Module):
         mask_padding_value: float = -1e4,
         device: str = "cpu",
         is_edge: bool = False,
-        use_dropout: bool = False # ,
+        use_dropout: bool = False,
+        is_cross_attention: bool = False,
         # max_position_embedding: int = 512
     ):
 
