@@ -40,8 +40,8 @@ class BackboneAttention(nn.Module):
 
         # Dictionary of available attention classes
         attention_classes = {
-            "standard": StandardCrossAttention,
-            #"strassen": StrassenAttention,
+            #"standard": StandardCrossAttention,
+            "strassen": StandardAttention,
         }
 
         # Validate and instantiate the selected attention type
