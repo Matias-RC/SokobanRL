@@ -43,6 +43,7 @@ class BackboneTransformerLayer(nn.Module):
             dtype=dtype,
             device=device,
             is_edge=is_edge,
+            is_cross_attention=False,
         )
 
         # Attention mechanism for cross multi-head attention
@@ -55,7 +56,7 @@ class BackboneTransformerLayer(nn.Module):
             dtype=dtype,
             device=device,
             is_edge=is_edge,
-            is_cross_attention = True,
+            is_cross_attention=True,
         )
 
         # Feed-forward network for masked multi-head attention
@@ -88,30 +89,50 @@ class BackboneTransformerLayer(nn.Module):
         self.dropout1 = nn.Dropout(dropout_rate)
         self.dropout2 = nn.Dropout(dropout_rate)
         self.dropout3 = nn.Dropout(dropout_rate)
+        self.dropout4 = nn.Dropout(dropout_rate)
 
     def forward(
-        self, hidden_state: torch.Tensor, batch_mask: torch.Tensor = None
+        self, hidden_state: torch.Tensor, batch_mask: torch.Tensor = None, memory: torch.Tensor = None,
     ) -> torch.Tensor:
 
-        # Attention block with residual connection
+        # Step 1: Masked Multihead Attention 
         hidden_state = self.norm1(hidden_state) if self.use_norm else hidden_state
-        attention_output, attention_weights = self.attention(
-            hidden_state=hidden_state, batch_mask=batch_mask
+        attention_output, attention_weights = self.masked_attention(
+            hidden_state=hidden_state, batch_mask=batch_mask,
         )
         attention_output = self.dropout1(attention_output)
-
         if self.concat:
             # Concatenate attention output with the hidden state: x <- x + f(x, dt*theta)
             if self.use_norm:
                 attention_output = self.norm2(attention_output)
-            ffn_output = self.ffn(u=hidden_state, v=attention_output)
+            ffn_output = self.ffn_mmha(u=hidden_state, v=attention_output)
             hidden_state = hidden_state + self.dropout2(ffn_output)
         else:
             # Add attention output to the hidden state: x <- x + dt*theta + f(ddt*(x+theta))
             hidden_state = hidden_state + attention_output
             if self.use_norm:
                 hidden_state = self.norm2(hidden_state)
-            ffn_output = self.ffn(u=hidden_state)
+            ffn_output = self.ffn_mmha(u=hidden_state)
             hidden_state = hidden_state + self.dropout2(ffn_output)
+
+
+        # Step 2: Cross Multihead Attention
+        attention_output, attention_weights = self.masked_attention(
+            hidden_state=hidden_state, batch_mask=batch_mask,
+        )
+        attention_output = self.dropout3(attention_output)
+        if self.concat:
+            # Concatenate attention output with the hidden state: x <- x + f(x, dt*theta)
+            if self.use_norm:
+                attention_output = self.norm3(attention_output)
+            ffn_output = self.ffn_cmha(u=hidden_state, v=attention_output)
+            hidden_state = hidden_state + self.dropout4(ffn_output)
+        else:
+            # Add attention output to the hidden state: x <- x + dt*theta + f(ddt*(x+theta))
+            hidden_state = hidden_state + attention_output
+            if self.use_norm:
+                hidden_state = self.norm3(hidden_state)
+            ffn_output = self.ffn_cmha(u=hidden_state)
+            hidden_state = hidden_state + self.dropout4(ffn_output)
 
         return hidden_state, attention_weights
