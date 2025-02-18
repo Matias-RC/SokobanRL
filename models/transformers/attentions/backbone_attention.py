@@ -3,7 +3,8 @@ import torch.nn as nn
 
 
 from models.transformers.attentions.standard import StandardAttention
-from models.transformers.attentions.strassen import StrassenAttention
+from models.transformers.attentions.cross_standard import StandardCrossAttention
+#from models.transformers.attentions.strassen import StrassenAttention
 
 class BackboneAttention(nn.Module):
     def __init__(
@@ -39,8 +40,8 @@ class BackboneAttention(nn.Module):
 
         # Dictionary of available attention classes
         attention_classes = {
-            "standard": StandardAttention,
-            "strassen": StrassenAttention,
+            "standard": StandardCrossAttention,
+            #"strassen": StrassenAttention,
         }
 
         # Validate and instantiate the selected attention type
@@ -56,7 +57,8 @@ class BackboneAttention(nn.Module):
             bias=bias,
             mask_padding_value=mask_padding_value,
             device=device,
-            use_dropout=use_dropout # ,
+            use_dropout=use_dropout,
+            is_cross_attention=is_cross_attention, # ,
             # max_position_embedding=max_position_embedding
         )
 

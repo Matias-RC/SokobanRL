@@ -4,7 +4,7 @@ import math
 from opt_einsum import contract
 import os
 
-class StandardAttention(nn.Module):
+class StandardCrossAttention(nn.Module):
     def __init__(
         self,
         hidden_dim: int,
@@ -15,11 +15,10 @@ class StandardAttention(nn.Module):
         mask_padding_value: float = -1e4,
         device: str = "cpu",
         use_dropout: bool = True,
-        is_cross_attention = False,
+        is_cross_attention = True,
 
     ):
-
-        super(StandardAttention, self).__init__()
+        super(StandardCrossAttention, self).__init__()
 
         self.hidden_dim = hidden_dim
         self.num_heads = num_heads
@@ -32,7 +31,10 @@ class StandardAttention(nn.Module):
 
         assert hidden_dim % num_heads == 0, "hidden_dim must be divisible by num_heads"
 
-        self.w = nn.Linear(self.hidden_dim, self.hidden_dim * 3, bias=bias, dtype=dtype, device=device)
+        #query, key and value matrices
+        self.Q = nn.Linear(self.hidden_dim, self.hidden_dim * 1, bias=bias, dtype=dtype, device=device)
+        self.KV = nn.Linear(self.hidden_dim, self.hidden_dim * 2, bias=bias, dtype=dtype, device=device)
+
         self.use_dropout = use_dropout
         if self.use_dropout:
             self.dropout = nn.Dropout(dropout_rate)
@@ -45,14 +47,12 @@ class StandardAttention(nn.Module):
         expanded_mask = expanded_mask.to(self.device)
         return expanded_mask
    
-    def forward(self, hidden_state, , batch_mask=None,):
+    def forward(self,hidden_state,memory=None,batch_mask=None):
 
-    
-    def cross_attention_forward(self,)
         
         attention_mask, mask = None, None
         if batch_mask is not None:
-            attention_mask, mask = batch_mask["attention_mask"], batch_mask["mask"]
+            attention_mask, mask, tgt_mask = batch_mask["attention_mask"], batch_mask["mask"], batch_mask["tgt_mask"]
 
         B, N, C = hidden_state.shape
         H = self.num_heads
@@ -61,16 +61,21 @@ class StandardAttention(nn.Module):
             C == self.hidden_dim
         ), "Last dimension of hidden_state must match hidden_dim."
 
-        wx = self.w(hidden_state).reshape(B, N, 3, H, D).permute(2, 0, 3, 1, 4)
-        q, k, v = wx[0], wx[1], wx[2]
+        Qx = self.Q(hidden_state).reshape(B, N, 1, H, D).permute(2, 0, 3, 1, 4)
+        KVx = self.KV(memory).reshape(B, N, 2, H, D).permute(2, 0, 3, 1, 4)
+
+        q, k, v = Qx[0], KVx[1], KVx[2]
 
         scores = contract("bhid,bhjd->bhij", q, k) * self.scaler
 
         if attention_mask is not None:
             expanded_mask = self.construct_mask(attention_mask)
-            # print("expanded_mask",expanded_mask)
             scores = scores.masked_fill(expanded_mask, self.mask_padding_value)
-
+        
+        if tgt_mask is not None:
+            tgt_expanded_mask = self.construct_mask(tgt_mask)
+            scores = scores.masked_fill(tgt_expanded_mask, self.mask_padding_value)
+        
         scores = (
             scores - scores.max(dim=-1, keepdim=True).values
         )  # Improve numerical stability
