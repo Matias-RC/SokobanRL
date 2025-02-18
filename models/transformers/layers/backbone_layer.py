@@ -4,7 +4,7 @@ import torch.nn as nn
 from models.transformers.attentions.backbone_attention import BackboneAttention
 from models.transformers.feed_forward_networks.attention import FFN
 
-class BackboneTransformerDecoderLayer(nn.Module):
+class BackboneTransformerLayer(nn.Module):
     def __init__(
         self,
         hidden_dim: int,
@@ -21,7 +21,7 @@ class BackboneTransformerDecoderLayer(nn.Module):
         is_edge: bool = False,
     ):
 
-        super(BackboneTransformerDecoderLayer, self).__init__()
+        super(BackboneTransformerLayer, self).__init__()
 
         self.hidden_dim = hidden_dim
         self.num_heads = num_heads

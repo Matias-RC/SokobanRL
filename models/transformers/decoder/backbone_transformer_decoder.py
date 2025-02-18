@@ -6,9 +6,9 @@ import sys
 sys.path.append(".")
 
 from models.transformers.embeddings.backbone_embedding import BackboneEmbedding
-from models.transformers.layers.backone_layer import BackboneTransformerLayer
+from models.transformers.layers.backbone_layer import BackboneTransformerLayer
 
-class BackboneTransformerDecoder(nn.Module):
+class BackboneTransformerDecoderLayer(nn.Module):
     def __init__(
         self,
         hidden_dim: int,
@@ -29,7 +29,7 @@ class BackboneTransformerDecoder(nn.Module):
         max_length: int = 514
     ):
 
-        super(BackboneTransformerDecoder, self).__init__()
+        super(BackboneTransformerDecoderLayer, self).__init__()
 
         self.share_layers = share_layers
         self.hidden_dim = hidden_dim
