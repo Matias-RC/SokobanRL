@@ -4,8 +4,7 @@ import torch.nn as nn
 from models.transformers.attentions.backbone_attention import BackboneAttention
 from models.transformers.feed_forward_networks.attention import FFN
 
-
-class BackboneTransformerLayer(nn.Module):
+class BackboneTransformerDecoderLayer(nn.Module):
     def __init__(
         self,
         hidden_dim: int,
@@ -22,7 +21,7 @@ class BackboneTransformerLayer(nn.Module):
         is_edge: bool = False,
     ):
 
-        super(BackboneTransformerLayer, self).__init__()
+        super(BackboneTransformerDecoderLayer, self).__init__()
 
         self.hidden_dim = hidden_dim
         self.num_heads = num_heads
@@ -33,8 +32,8 @@ class BackboneTransformerLayer(nn.Module):
         self.attention_type = attention_type
         self.is_edge = is_edge
 
-        # Attention mechanism for masked multi-head attention
-        self.masked_attention = BackboneAttention(
+        # Attention mechanism
+        self.attention = BackboneAttention(
             attention_type=attention_type,
             hidden_dim=hidden_dim,
             num_heads=num_heads,
@@ -43,34 +42,10 @@ class BackboneTransformerLayer(nn.Module):
             dtype=dtype,
             device=device,
             is_edge=is_edge,
-            is_cross_attention=False,
         )
 
-        # Attention mechanism for cross multi-head attention
-        self.cross_attention = BackboneAttention(
-            attention_type=attention_type,
-            hidden_dim=hidden_dim,
-            num_heads=num_heads,
-            use_dropout=use_attention_dropout,
-            dropout_rate=dropout_rate,
-            dtype=dtype,
-            device=device,
-            is_edge=is_edge,
-            is_cross_attention=True,
-        )
-
-        # Feed-forward network for masked multi-head attention
-        self.ffn_mmha = FFN(
-            hidden_dim=hidden_dim,
-            depth=ffn_depth,
-            dropout_rate=dropout_rate,
-            eps=eps,
-            concat=concat,
-            dtype=dtype,
-            device=device,
-        )
-        # Feed-forward network for cross multi-head attention
-        self.ffn_cmha = FFN(
+        # Feed-forward network
+        self.ffn = FFN(
             hidden_dim=hidden_dim,
             depth=ffn_depth,
             dropout_rate=dropout_rate,
@@ -83,56 +58,34 @@ class BackboneTransformerLayer(nn.Module):
         # Normalization layers
         self.norm1 = nn.LayerNorm(hidden_dim, eps=eps, dtype=dtype, device=device)
         self.norm2 = nn.LayerNorm(hidden_dim, eps=eps, dtype=dtype, device=device)
-        self.norm3 = nn.LayerNorm(hidden_dim, eps=eps, dtype=dtype, device=device)
 
         # Dropout layers
         self.dropout1 = nn.Dropout(dropout_rate)
         self.dropout2 = nn.Dropout(dropout_rate)
-        self.dropout3 = nn.Dropout(dropout_rate)
-        self.dropout4 = nn.Dropout(dropout_rate)
 
     def forward(
-        self, hidden_state: torch.Tensor, batch_mask: torch.Tensor = None, memory: torch.Tensor = None,
+        self, hidden_state: torch.Tensor, batch_mask: torch.Tensor = None
     ) -> torch.Tensor:
 
-        # Step 1: Masked Multihead Attention 
+        # Attention block with residual connection
         hidden_state = self.norm1(hidden_state) if self.use_norm else hidden_state
-        attention_output, attention_weights = self.masked_attention(
-            hidden_state=hidden_state, batch_mask=batch_mask,
+        attention_output, attention_weights = self.attention(
+            hidden_state=hidden_state, batch_mask=batch_mask
         )
         attention_output = self.dropout1(attention_output)
+
         if self.concat:
             # Concatenate attention output with the hidden state: x <- x + f(x, dt*theta)
             if self.use_norm:
                 attention_output = self.norm2(attention_output)
-            ffn_output = self.ffn_mmha(u=hidden_state, v=attention_output)
+            ffn_output = self.ffn(u=hidden_state, v=attention_output)
             hidden_state = hidden_state + self.dropout2(ffn_output)
         else:
             # Add attention output to the hidden state: x <- x + dt*theta + f(ddt*(x+theta))
             hidden_state = hidden_state + attention_output
             if self.use_norm:
                 hidden_state = self.norm2(hidden_state)
-            ffn_output = self.ffn_mmha(u=hidden_state)
+            ffn_output = self.ffn(u=hidden_state)
             hidden_state = hidden_state + self.dropout2(ffn_output)
-
-
-        # Step 2: Cross Multihead Attention
-        attention_output, attention_weights = self.masked_attention(
-            hidden_state=hidden_state, batch_mask=batch_mask,
-        )
-        attention_output = self.dropout3(attention_output)
-        if self.concat:
-            # Concatenate attention output with the hidden state: x <- x + f(x, dt*theta)
-            if self.use_norm:
-                attention_output = self.norm3(attention_output)
-            ffn_output = self.ffn_cmha(u=hidden_state, v=attention_output)
-            hidden_state = hidden_state + self.dropout4(ffn_output)
-        else:
-            # Add attention output to the hidden state: x <- x + dt*theta + f(ddt*(x+theta))
-            hidden_state = hidden_state + attention_output
-            if self.use_norm:
-                hidden_state = self.norm3(hidden_state)
-            ffn_output = self.ffn_cmha(u=hidden_state)
-            hidden_state = hidden_state + self.dropout4(ffn_output)
 
         return hidden_state, attention_weights
