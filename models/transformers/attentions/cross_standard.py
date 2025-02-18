@@ -64,7 +64,7 @@ class StandardCrossAttention(nn.Module):
         Qx = self.Q(hidden_state).reshape(B, N, 1, H, D).permute(2, 0, 3, 1, 4)
         KVx = self.KV(memory).reshape(B, N, 2, H, D).permute(2, 0, 3, 1, 4)
 
-        q, k, v = Qx[0], KVx[1], KVx[2]
+        q, k, v = Qx[0], KVx[0], KVx[1]
 
         scores = contract("bhid,bhjd->bhij", q, k) * self.scaler
 
