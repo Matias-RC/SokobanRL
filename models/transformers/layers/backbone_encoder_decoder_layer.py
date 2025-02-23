@@ -33,7 +33,6 @@ class BackboneTransformerLayer(nn.Module):
         self.masked_multi_head_attention = masked_multi_head_attention
         self.cross_multi_head_attention = cross_multi_head_attention
         
-
         # 1- Attention mechanism for multihead attention
         self.multihead_attention = BackboneAttention(
             attention_type=attention_type,
@@ -46,7 +45,6 @@ class BackboneTransformerLayer(nn.Module):
             masked_multi_head_attention=masked_multi_head_attention,
             is_cross_attention=False,
         )
-
         # Feed-forward network for multihead attention
         self.ffn_mha = FFN(
             hidden_dim=hidden_dim,
@@ -57,18 +55,15 @@ class BackboneTransformerLayer(nn.Module):
             dtype=dtype,
             device=device,
         )
-
         # Normalization layers
         self.norm1 = nn.LayerNorm(hidden_dim, eps=eps, dtype=dtype, device=device)
         self.norm2 = nn.LayerNorm(hidden_dim, eps=eps, dtype=dtype, device=device)
-        
         # Dropout layers
         self.dropout1 = nn.Dropout(dropout_rate)
         self.dropout2 = nn.Dropout(dropout_rate)
 
-        # 2-Attention mechanism for cross multi-head attention
-        # Feed-forward network for cross multi-head attention
         if self.cross_multi_head_attention:
+            # Attention mechanism for cross multi-head attention
             self.cross_multihead_attention = BackboneAttention(
                 attention_type=attention_type,
                 hidden_dim=hidden_dim,
@@ -77,9 +72,10 @@ class BackboneTransformerLayer(nn.Module):
                 dropout_rate=dropout_rate,
                 dtype=dtype,
                 device=device,
-                masked_multi_head_attention=masked_multi_head_attention,
-                is_cross_attention=True,
+                masked_multi_head_attention=False,
+                is_cross_attention=self.cross_multi_head_attention,
             )
+            # Feed-forward network for cross multi-head attention
             self.ffn_cmha = FFN(
                 hidden_dim=hidden_dim,
                 depth=ffn_depth,
@@ -89,18 +85,16 @@ class BackboneTransformerLayer(nn.Module):
                 dtype=dtype,
                 device=device,
             )
-            
+            #normalization and dropout for cross attention
             self.norm3 = nn.LayerNorm(hidden_dim, eps=eps, dtype=dtype, device=device)
             self.dropout3 = nn.Dropout(dropout_rate)
             self.dropout4 = nn.Dropout(dropout_rate)
-
-        
 
     def forward(
         self, hidden_state: torch.Tensor, batch_mask: torch.Tensor = None, memory: torch.Tensor = None,
     ) -> torch.Tensor:
 
-        # Step 1: Masked Multihead Attention 
+        # Step 1: Multihead Attention 
         hidden_state = self.norm1(hidden_state) if self.use_norm else hidden_state
         attention_output, attention_weights = self.multihead_attention(
             hidden_state=hidden_state, batch_mask=batch_mask,
@@ -119,7 +113,6 @@ class BackboneTransformerLayer(nn.Module):
                 hidden_state = self.norm2(hidden_state)
             ffn_output = self.ffn_mha(u=hidden_state)
             hidden_state = hidden_state + self.dropout2(ffn_output)
-
 
         # Step 2: Cross Multihead Attention
         if self.cross_multi_head_attention:
