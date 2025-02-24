@@ -20,6 +20,7 @@ class BackboneAttention(nn.Module):
         device: str = "cpu",
         is_edge: bool = False,
         use_dropout: bool = False,
+        masked_multi_head_attention: bool = False,
         is_cross_attention: bool = False,
         # max_position_embedding: int = 512
     ):
@@ -36,6 +37,7 @@ class BackboneAttention(nn.Module):
         self.device = device
         self.is_edge = is_edge
         self.use_dropout = use_dropout
+        self.masked_multihead_attention = masked_multi_head_attention
         # self.max_position_embedding = max_position_embedding
 
         # Dictionary of available attention classes
@@ -58,8 +60,8 @@ class BackboneAttention(nn.Module):
             mask_padding_value=mask_padding_value,
             device=device,
             use_dropout=use_dropout,
-            is_cross_attention=is_cross_attention, # ,
-            # max_position_embedding=max_position_embedding
+            masked_multihead_attention=masked_multi_head_attention,
+            is_cross_attention=is_cross_attention,
         )
 
         self.init_weight()

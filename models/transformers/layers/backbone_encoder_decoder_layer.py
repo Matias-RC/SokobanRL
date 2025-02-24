@@ -17,7 +17,7 @@ class BackboneTransformerLayer(nn.Module):
         eps: float = 1e-6,
         ffn_depth: int = 3,
         device: str = "cpu",
-        masked_multi_head_attention: bool = False,
+        masked_multihead_attention: bool = False,
         cross_multi_head_attention: bool = False,
     ):
 
@@ -30,7 +30,7 @@ class BackboneTransformerLayer(nn.Module):
         self.concat = concat
         self.eps = eps
         self.attention_type = attention_type
-        self.masked_multi_head_attention = masked_multi_head_attention
+        self.masked_multi_head_attention = masked_multihead_attention
         self.cross_multi_head_attention = cross_multi_head_attention
         
         # 1- Attention mechanism for multihead attention
@@ -42,7 +42,7 @@ class BackboneTransformerLayer(nn.Module):
             dropout_rate=dropout_rate,
             dtype=dtype,
             device=device,
-            masked_multi_head_attention=masked_multi_head_attention,
+            masked_multi_head_attention=masked_multihead_attention,
             is_cross_attention=False,
         )
         # Feed-forward network for multihead attention
