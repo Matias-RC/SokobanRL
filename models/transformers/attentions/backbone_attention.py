@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 from models.transformers.attentions.standard import StandardAttention
-from models.transformers.attentions.cross_standard import StandardCrossAttention
+from models.transformers.attentions.multihead_standard import MultiHeadStandardAttention
 #from models.transformers.attentions.strassen import StrassenAttention
 
 class BackboneAttention(nn.Module):
@@ -20,7 +20,7 @@ class BackboneAttention(nn.Module):
         device: str = "cpu",
         is_edge: bool = False,
         use_dropout: bool = False,
-        masked_multi_head_attention: bool = False,
+        masked_multihead_attention: bool = False,
         is_cross_attention: bool = False,
         # max_position_embedding: int = 512
     ):
@@ -37,13 +37,14 @@ class BackboneAttention(nn.Module):
         self.device = device
         self.is_edge = is_edge
         self.use_dropout = use_dropout
-        self.masked_multihead_attention = masked_multi_head_attention
+        self.masked_multihead_attention = masked_multihead_attention
         # self.max_position_embedding = max_position_embedding
 
         # Dictionary of available attention classes
         attention_classes = {
             #"standard": StandardCrossAttention,
             "strassen": StandardAttention,
+            "strassen": MultiHeadStandardAttention,
         }
 
         # Validate and instantiate the selected attention type

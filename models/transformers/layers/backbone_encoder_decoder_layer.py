@@ -18,7 +18,7 @@ class BackboneTransformerLayer(nn.Module):
         ffn_depth: int = 3,
         device: str = "cpu",
         masked_multihead_attention: bool = False,
-        cross_multi_head_attention: bool = False,
+        cross_attention: bool = False,
     ):
 
         super(BackboneTransformerLayer, self).__init__()
@@ -30,11 +30,11 @@ class BackboneTransformerLayer(nn.Module):
         self.concat = concat
         self.eps = eps
         self.attention_type = attention_type
-        self.masked_multi_head_attention = masked_multihead_attention
-        self.cross_multi_head_attention = cross_multi_head_attention
+        self.masked_multihead_attention = masked_multihead_attention
+        self.cross_attention = cross_attention
         
         # 1- Attention mechanism for multihead attention
-        self.multihead_attention = BackboneAttention(
+        self.self_attention = BackboneAttention(
             attention_type=attention_type,
             hidden_dim=hidden_dim,
             num_heads=num_heads,
@@ -42,7 +42,7 @@ class BackboneTransformerLayer(nn.Module):
             dropout_rate=dropout_rate,
             dtype=dtype,
             device=device,
-            masked_multi_head_attention=masked_multihead_attention,
+            masked_multihead_attention=masked_multihead_attention,
             is_cross_attention=False,
         )
         # Feed-forward network for multihead attention
@@ -62,9 +62,9 @@ class BackboneTransformerLayer(nn.Module):
         self.dropout1 = nn.Dropout(dropout_rate)
         self.dropout2 = nn.Dropout(dropout_rate)
 
-        if self.cross_multi_head_attention:
+        if self.cross_attention:
             # Attention mechanism for cross multi-head attention
-            self.cross_multihead_attention = BackboneAttention(
+            self.cross_attention = BackboneAttention(
                 attention_type=attention_type,
                 hidden_dim=hidden_dim,
                 num_heads=num_heads,
@@ -73,7 +73,7 @@ class BackboneTransformerLayer(nn.Module):
                 dtype=dtype,
                 device=device,
                 masked_multi_head_attention=False,
-                is_cross_attention=self.cross_multi_head_attention,
+                is_cross_attention=self.cross_attention,
             )
             # Feed-forward network for cross multi-head attention
             self.ffn_cmha = FFN(
@@ -96,7 +96,7 @@ class BackboneTransformerLayer(nn.Module):
 
         # Step 1: Multihead Attention 
         hidden_state = self.norm1(hidden_state) if self.use_norm else hidden_state
-        attention_output, attention_weights = self.multihead_attention(
+        attention_output, attention_weights = self.self_attention(
             hidden_state=hidden_state, batch_mask=batch_mask,
         )
         attention_output = self.dropout1(attention_output)
@@ -115,8 +115,8 @@ class BackboneTransformerLayer(nn.Module):
             hidden_state = hidden_state + self.dropout2(ffn_output)
 
         # Step 2: Cross Multihead Attention
-        if self.cross_multi_head_attention:
-            attention_output, attention_weights = self.cross_multihead_attention(
+        if self.cross_attention:
+            attention_output, attention_weights = self.cross_attention(
                 hidden_state=hidden_state, batch_mask=batch_mask,
             )
             attention_output = self.dropout3(attention_output)

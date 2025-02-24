@@ -4,7 +4,7 @@ import math
 from opt_einsum import contract
 import os
 
-class GeneralStandardAttention(nn.Module):
+class MultiHeadStandardAttention(nn.Module):
     def __init__(
         self,
         hidden_dim: int,
@@ -20,7 +20,7 @@ class GeneralStandardAttention(nn.Module):
         max_positions: int = 512,
 
     ):
-        super(GeneralStandardAttention, self).__init__()
+        super(MultiHeadStandardAttention, self).__init__()
 
         self.hidden_dim = hidden_dim
         self.num_heads = num_heads
@@ -29,6 +29,7 @@ class GeneralStandardAttention(nn.Module):
         self.mask_padding_value = mask_padding_value
         self.device = device
         self.bias = bias
+        self.is_inference = False
 
         self.masked_multihead_attention = masked_multihead_attention
         self.is_cross_attention = is_cross_attention
@@ -64,35 +65,35 @@ class GeneralStandardAttention(nn.Module):
         return expanded_mask
    
     def forward(self,
-                hidden_states,
-                encoder_hidden_states=None,
-                batch_mask=None):
+                query_hidden_states, #decoder hidden states
+                key_value_hidden_states=None, # encoder hidden states
+                batch_mask=None): #all mask 
         
         if batch_mask is not None:
-            attention_mask, mask = batch_mask["attention_mask"], batch_mask["mask"] #, batch_mask["tgt_mask"]
+            src_key_padding_mask, mask = batch_mask["attention_mask"], batch_mask["mask"] #, batch_mask["tgt_mask"]
 
         #cross attention or self attention
-        if encoder_hidden_states is not None:
-            q = self.q_attn(hidden_states) #query_states
-            k, v = self.c_attn(encoder_hidden_states).split(self.split_size, dim=2) #key_states, value_states
+        if self.is_cross_attention:
+            q = self.q_attn(query_hidden_states) #query_states
+            k, v = self.c_attn(key_value_hidden_states).split(self.split_size, dim=2) #key_states, value_states
             #attention_mask = batch_mask["encoder_attention_mask"]
         else:
-            q, k, v = self.qkv_attn(hidden_states).split(self.split_size, dim=2)
+            q, k, v = self.qkv_attn(query_hidden_states).split(self.split_size, dim=2)
         
         B, N, C = q.shape
-        H = self.num_heads
-        D = self.head_dim
-        assert (
-            C == self.hidden_dim
-        ), "Last dimension of hidden_state must match hidden_dim."
+        #H = self.num_heads
+        #D = self.head_dim
+        #assert (
+        #    C == self.hidden_dim
+        #), "Last dimension of hidden_state must match hidden_dim."
 
         #Qx = self.Q(hidden_state).reshape(B, N, 1, H, D).permute(2, 0, 3, 1, 4)
         #KVx = self.KV(memory).reshape(B, N, 2, H, D).permute(2, 0, 3, 1, 4)
 
         scores = contract("bhid,bhjd->bhij", q, k) * self.scaler
 
-        if attention_mask is not None:
-            expanded_mask = self.construct_mask(attention_mask)
+        if self.is_cross_attention:
+            expanded_mask = self.construct_mask(src_key_padding_mask)
             scores = scores.masked_fill(expanded_mask, self.mask_padding_value)
         
         if self.masked_multihead_attention: 
@@ -101,13 +102,18 @@ class GeneralStandardAttention(nn.Module):
         scores = (
             scores - scores.max(dim=-1, keepdim=True).values
         )  # Improve numerical stability
+
         att_weights = scores.softmax(dim=-1)
+        
         if self.use_dropout:
             att_weights = self.dropout(att_weights)
 
         att = contract("bhij,bhjd->bhid", att_weights, v)
         att = att.transpose(1, 2)
         att = att.reshape(B, N, C)
+
+        if self.is_inference:
+            pass
 
         return att, att_weights
 
