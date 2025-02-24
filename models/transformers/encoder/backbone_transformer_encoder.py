@@ -6,7 +6,7 @@ import sys
 sys.path.append(".")
 
 from models.transformers.embeddings.backbone_embedding import BackboneEmbedding
-from models.transformers.layers.backbone_layer import BackboneTransformerLayer
+from models.transformers.layers.backbone_encoder_decoder_layer import BackboneTransformerLayer
 
 class BackboneTransformerEncoder(nn.Module):
     def __init__(
@@ -63,7 +63,8 @@ class BackboneTransformerEncoder(nn.Module):
                 dtype=dtype,
                 device=device,
                 attention_type=attention_type,
-                is_edge=(attention_type == "triangular"),
+                masked_multihead_attention=False,
+                cross_attention=False,
             )
             self.layers = nn.ModuleList([shared_layer] * num_layers)
         else:
@@ -79,7 +80,8 @@ class BackboneTransformerEncoder(nn.Module):
                     dtype=dtype,
                     device=device,
                     attention_type=attention_type,
-                    is_edge=(attention_type == "triangular"),
+                    masked_multihead_attention=False,
+                    cross_attention=False,
                 )
                 for _ in range(num_layers)
             ])

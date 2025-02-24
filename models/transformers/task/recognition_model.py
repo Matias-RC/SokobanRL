@@ -6,7 +6,7 @@ from models.transformers.feed_forward_networks.seqregressor import SequenceRegre
 from models.transformers.feed_forward_networks.seqclassifier import SequenceClassifier
 from models.transformers.decoder.backbone_transformer_decoder import BackboneTransformerDecoder
 
-class TransformerRecognitionModel(nn.Module):
+class RecognitionModelTransformer(nn.Module):
     def __init__(
         self,
         hidden_dim: int,
@@ -24,7 +24,7 @@ class TransformerRecognitionModel(nn.Module):
         output_dim: int = 1,
     ) -> None:
 
-        super(TransformerRecognitionModel, self).__init__()
+        super(RecognitionModelTransformer, self).__init__()
 
         self.name = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}".format(
             self.__class__.__name__.lower(),

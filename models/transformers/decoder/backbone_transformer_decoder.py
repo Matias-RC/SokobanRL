@@ -8,7 +8,7 @@ sys.path.append(".")
 from models.transformers.embeddings.backbone_embedding import BackboneEmbedding
 from models.transformers.layers.backbone_encoder_decoder_layer import BackboneTransformerLayer
 
-class BackboneTransformerDecoderLayer(nn.Module):
+class BackboneTransformerDecoder(nn.Module):
     def __init__(
         self,
         hidden_dim: int,
@@ -29,7 +29,7 @@ class BackboneTransformerDecoderLayer(nn.Module):
         max_length: int = 514
     ):
 
-        super(BackboneTransformerDecoderLayer, self).__init__()
+        super(BackboneTransformerDecoder, self).__init__()
 
         self.share_layers = share_layers
         self.hidden_dim = hidden_dim
@@ -63,7 +63,8 @@ class BackboneTransformerDecoderLayer(nn.Module):
                 dtype=dtype,
                 device=device,
                 attention_type=attention_type,
-                is_edge=(attention_type == "triangular"),
+                masked_multihead_attention=True,
+                cross_attention=True,
             )
             self.layers = nn.ModuleList([shared_layer] * num_layers)
         else:
@@ -79,7 +80,8 @@ class BackboneTransformerDecoderLayer(nn.Module):
                     dtype=dtype,
                     device=device,
                     attention_type=attention_type,
-                    is_edge=(attention_type == "triangular"),
+                    masked_multihead_attention=True,
+                    cross_attention=True,
                 )
                 for _ in range(num_layers)
             ])

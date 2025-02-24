@@ -17,7 +17,7 @@ class MultiHeadStandardAttention(nn.Module):
         use_dropout: bool = True,
         masked_multihead_attention: bool = False,
         is_cross_attention: bool = True,
-        max_positions: int = 512,
+        max_positions: int = 128,
 
     ):
         super(MultiHeadStandardAttention, self).__init__()
@@ -34,7 +34,7 @@ class MultiHeadStandardAttention(nn.Module):
         self.masked_multihead_attention = masked_multihead_attention
         self.is_cross_attention = is_cross_attention
         self.split_size = self.hidden_dim
-
+        
         self.register_buffer(
             "tril",
             torch.tril(torch.ones((max_positions, max_positions), dtype=torch.bool)).view(
@@ -69,14 +69,9 @@ class MultiHeadStandardAttention(nn.Module):
                 key_value_hidden_states=None, # encoder hidden states
                 batch_mask=None): #all mask 
         
-        if batch_mask is not None:
-            src_key_padding_mask, mask = batch_mask["attention_mask"], batch_mask["mask"] #, batch_mask["tgt_mask"]
-
-        #cross attention or self attention
         if self.is_cross_attention:
             q = self.q_attn(query_hidden_states) #query_states
             k, v = self.c_attn(key_value_hidden_states).split(self.split_size, dim=2) #key_states, value_states
-            #attention_mask = batch_mask["encoder_attention_mask"]
         else:
             q, k, v = self.qkv_attn(query_hidden_states).split(self.split_size, dim=2)
         
@@ -92,7 +87,8 @@ class MultiHeadStandardAttention(nn.Module):
 
         scores = contract("bhid,bhjd->bhij", q, k) * self.scaler
 
-        if self.is_cross_attention:
+        if batch_mask is not None and self.is_cross_attention:
+            src_key_padding_mask, mask = batch_mask["attention_mask"], batch_mask["mask"] #, batch_mask["tgt_mask"]
             expanded_mask = self.construct_mask(src_key_padding_mask)
             scores = scores.masked_fill(expanded_mask, self.mask_padding_value)
         
@@ -111,9 +107,6 @@ class MultiHeadStandardAttention(nn.Module):
         att = contract("bhij,bhjd->bhid", att_weights, v)
         att = att.transpose(1, 2)
         att = att.reshape(B, N, C)
-
-        if self.is_inference:
-            pass
 
         return att, att_weights
 

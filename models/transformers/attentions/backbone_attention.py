@@ -42,9 +42,8 @@ class BackboneAttention(nn.Module):
 
         # Dictionary of available attention classes
         attention_classes = {
-            #"standard": StandardCrossAttention,
-            "strassen": StandardAttention,
-            "strassen": MultiHeadStandardAttention,
+            #"standard": StandardAttention,
+            "standard": MultiHeadStandardAttention,
         }
 
         # Validate and instantiate the selected attention type
@@ -61,7 +60,7 @@ class BackboneAttention(nn.Module):
             mask_padding_value=mask_padding_value,
             device=device,
             use_dropout=use_dropout,
-            masked_multihead_attention=masked_multi_head_attention,
+            masked_multihead_attention=masked_multihead_attention,
             is_cross_attention=is_cross_attention,
         )
 
