@@ -16,7 +16,7 @@ class MultiHeadStandardAttention(nn.Module):
         device: str = "cpu",
         use_dropout: bool = True,
         masked_multihead_attention: bool = False,
-        is_cross_attention: bool = True,
+        is_cross_attention: bool = False,
         max_positions: int = 128,
 
     ):
@@ -33,7 +33,7 @@ class MultiHeadStandardAttention(nn.Module):
 
         self.masked_multihead_attention = masked_multihead_attention
         self.is_cross_attention = is_cross_attention
-        self.split_size = self.hidden_dim
+        #self.split_size = self.hidden_dim
         
         self.register_buffer(
             "tril",
@@ -46,6 +46,9 @@ class MultiHeadStandardAttention(nn.Module):
 
         assert hidden_dim % num_heads == 0, "hidden_dim must be divisible by num_heads"
 
+        #self.q_attn = nn.Linear(self.hidden_dim, self.hidden_dim * 1, bias=bias, dtype=dtype, device=device)
+        #self.k_attn = nn.Linear(self.hidden_dim, self.hidden_dim * 1, bias=bias, dtype=dtype, device=device)
+        #self.v_attn = nn.Linear(self.hidden_dim, self.hidden_dim * 1, bias=bias, dtype=dtype, device=device)
         if self.is_cross_attention:
             self.q_attn = nn.Linear(self.hidden_dim, self.hidden_dim * 1, bias=bias, dtype=dtype, device=device)
             self.c_attn = nn.Linear(self.hidden_dim, self.hidden_dim * 2, bias=bias, dtype=dtype, device=device)
@@ -67,34 +70,37 @@ class MultiHeadStandardAttention(nn.Module):
     def forward(self,
                 query_hidden_states, #decoder hidden states
                 key_value_hidden_states=None, # encoder hidden states
-                batch_mask=None): #all mask 
+                batch_mask=None): #all mask
+
+        #src key padding mask 
+        src_key_padding_mask = None #maybe encoder_mask and causal_mask
+        if batch_mask is not None and self.is_cross_attention:
+            src_key_padding_mask, query_padding_mask = batch_mask["key_padding_mask"], batch_mask["query_padding_mask"] 
+            key_padding_mask = self.construct_mask(src_key_padding_mask)
+            query_padding_mask = self.construct_mask(query_padding_mask)
         
         if self.is_cross_attention:
-            q = self.q_attn(query_hidden_states) #query_states
-            k, v = self.c_attn(key_value_hidden_states).split(self.split_size, dim=2) #key_states, value_states
+            q = self.q_attn(query_hidden_states).reshape(B, N, 1, H, D).permute(2, 0, 3, 1, 4) #query
+            k, v = self.c_attn(key_value_hidden_states).reshape(B, N, 2, H, D).permute(2, 0, 3, 1, 4) #key_states, value_states
         else:
-            q, k, v = self.qkv_attn(query_hidden_states).split(self.split_size, dim=2)
+            q, k, v = self.qkv_attn(query_hidden_states).reshape(B, N, 3, H, D).permute(2, 0, 3, 1, 4)
         
         B, N, C = q.shape
-        #H = self.num_heads
-        #D = self.head_dim
-        #assert (
-        #    C == self.hidden_dim
-        #), "Last dimension of hidden_state must match hidden_dim."
-
-        #Qx = self.Q(hidden_state).reshape(B, N, 1, H, D).permute(2, 0, 3, 1, 4)
-        #KVx = self.KV(memory).reshape(B, N, 2, H, D).permute(2, 0, 3, 1, 4)
-
+        H = self.num_heads
+        D = self.head_dim
+        assert (
+            C == self.hidden_dim
+        ), "Last dimension of hidden_state must match hidden_dim."
+        
         scores = contract("bhid,bhjd->bhij", q, k) * self.scaler
 
-        if batch_mask is not None and self.is_cross_attention:
-            src_key_padding_mask, mask = batch_mask["attention_mask"], batch_mask["mask"] #, batch_mask["tgt_mask"]
-            expanded_mask = self.construct_mask(src_key_padding_mask)
-            scores = scores.masked_fill(expanded_mask, self.mask_padding_value)
-        
-        if self.masked_multihead_attention: 
-            scores = scores.masked_fill(self.tril[:N,:N], self.mask_padding_value) ##tgt_expanded_mask = self.construct_mask(self.tril[:N,:N])
-        
+        if query_padding_mask is not None: #key attention mask
+            scores = scores.masked_fill(query_padding_mask, self.mask_padding_value)
+        if src_key_padding_mask is not None: #key attention mask
+            scores = scores.masked_fill(key_padding_mask, self.mask_padding_value)
+        if self.masked_multihead_attention: #causal mask
+            scores = scores.masked_fill(self.tril[:N,:N], self.mask_padding_value) 
+            
         scores = (
             scores - scores.max(dim=-1, keepdim=True).values
         )  # Improve numerical stability

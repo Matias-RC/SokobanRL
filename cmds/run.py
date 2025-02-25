@@ -10,7 +10,6 @@ from managers.sokoban_manager import SokobanManager
 from models.q_models.delta_scorer import DeltaScorer
 import numpy as np
 
-
 NUM_TASKS = 2
 GRID_SIZE = 6
 
