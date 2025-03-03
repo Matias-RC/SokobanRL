@@ -42,6 +42,8 @@ class GenerativeModelTransformer(nn.Module):
             attention_type,
         )
 
+        self.is_training = True
+        
         #process all the input data with a decoder transformer
         self.encoder = BackboneTransformerEncoder(
             hidden_dim=hidden_dim,
@@ -84,12 +86,16 @@ class GenerativeModelTransformer(nn.Module):
 
         self.is_training = False
 
-    def forward(self, x) -> torch.Tensor:
-
-        if self.is_training:
-            return self.structured_forward(x)
-        else:
-            return self.unstructured_forward(x)
+    def forward(self, batch):
+        #encoder
+        activations, attn_weights = self.encoder(batch)
+        #save attention activations from encoder in batch
+        batch["cross_hidden_states"] = activations
+        #decoder        
+        decoder_activations, = self.decoder(batch)
+        #classify all outputs
+        y_hat = self.classifier(decoder_activations) # regressor is a feed forward network
+        return y_hat, activations
 
     def unstructured_forward(self, instance) -> torch.Tensor:
 
@@ -97,9 +103,11 @@ class GenerativeModelTransformer(nn.Module):
 
         return self.forward(x)
 
-    def structured_forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def structured_forward(self, batch):
 
         activations, attn_weights = self.encoder(x)
+
+        x["cross_hidden_states"] = activations
         
         activations, = self.decoder(y)
 

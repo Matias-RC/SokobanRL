@@ -64,7 +64,7 @@ device ="cuda:0" #'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
 n_embd = 384
 n_head = 6
-n_layer = 6
+n_layer = 2
 dropout = 0.1
 
 #model with fix hyperparams
@@ -88,19 +88,17 @@ generative_model = GenerativeModelTransformer(hidden_dim = n_embd,
 print(generative_model)
 
 
-#input-ouput pairs
+
+
+#input-ouput pairs example
+from data.datasets.generative_model.dataset import GenerativeDataset
+from data.datasets.generative_model.collate import collate_fn
+
 session_test = session_solved[0]
-print("solution example:")
-print(f"class of solution {type(session_test.solution)}")
+print("solution example:");print(f"class of solution {type(session_test.solution)}")
 print(f"dictionary of solution {session_test.solution.__dict__.keys()}")
 
-# grid (initial state) and the position of the sokoban player
-initial_state = session_test.initial_state
-print(initial_state)
-# actions that should generate the model
-actions_to_solve = session_test.solution.trajectory
-print(actions_to_solve)
-
+batch = [session_test]
 
 
 def get_batch(split):
@@ -113,9 +111,6 @@ def get_batch(split):
     return x, y
 
 
-batch = {"initial_state": initial_state ,
-         "actions_to_solve":actions_to_solve,
-         }
 
 
 
