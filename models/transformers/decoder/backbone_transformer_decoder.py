@@ -26,7 +26,9 @@ class BackboneTransformerDecoder(nn.Module):
         device: str = "cpu",
         attention_type: str = "standard",
         num_embeddings: int = 1,
-        max_length: int = 514
+        block_size: int = 128,
+        masked_multihead_attention: bool = False,
+        is_cross_attention: bool = False,
     ):
 
         super(BackboneTransformerDecoder, self).__init__()
@@ -38,18 +40,15 @@ class BackboneTransformerDecoder(nn.Module):
         self.device = device
         self.attention_type = attention_type
 
-        #embedding for decoder 
-        self.embedding = BackboneEmbedding(
-            hidden_dim=hidden_dim,
-            embedding_norm_scalar=embedding_norm_scalar,
-            mode=mode,
-            dtype=dtype,
-            embedding_type=embedding_type,
-            device=device,
-            is_edge=(attention_type == "triangular"),
-            num_embeddings=num_embeddings,
-            max_length=max_length
-        )
+        self.embedding = BackboneEmbedding( hidden_dim=hidden_dim,
+                                            embedding_norm_scalar=embedding_norm_scalar,
+                                            mode=mode,
+                                            dtype= torch.float64,
+                                            embedding_type=embedding_type,
+                                            device=device,
+                                            block_size=block_size,
+                                            is_encoder = False,
+                                           )
 
         # Initialize transformer layers
         if share_layers:
@@ -63,8 +62,9 @@ class BackboneTransformerDecoder(nn.Module):
                 dtype=dtype,
                 device=device,
                 attention_type=attention_type,
-                masked_multihead_attention=True,
-                cross_attention=True,
+                block_size=block_size,
+                masked_multihead_attention=masked_multihead_attention,
+                is_cross_attention=is_cross_attention,
             )
             self.layers = nn.ModuleList([shared_layer] * num_layers)
         else:
@@ -80,8 +80,9 @@ class BackboneTransformerDecoder(nn.Module):
                     dtype=dtype,
                     device=device,
                     attention_type=attention_type,
-                    masked_multihead_attention=True,
-                    cross_attention=True,
+                    block_size=block_size,
+                    masked_multihead_attention=masked_multihead_attention,
+                    is_cross_attention=is_cross_attention,
                 )
                 for _ in range(num_layers)
             ])
@@ -94,6 +95,7 @@ class BackboneTransformerDecoder(nn.Module):
     def forward(self, batch: dict = None, memory:torch.Tensor = None) -> torch.Tensor:
         input_embd = self.embedding(batch=batch)
         hidden_state = input_embd
+        cross_hidden_states = batch["cross_hidden_states"]
         
         all_attention_weights = []
         for layer in self.layers:
@@ -109,7 +111,7 @@ class BackboneTransformerDecoder(nn.Module):
                 )
             else:
                 hidden_state, attention_weights = layer(
-                    hidden_state=hidden_state, batch_mask=None#batch["batch_mask"]
+                    query_hidden_states=hidden_state, cross_hidden_states=cross_hidden_states, batch_mask=batch["batch_mask"]
                 )
             all_attention_weights.append(attention_weights)
 

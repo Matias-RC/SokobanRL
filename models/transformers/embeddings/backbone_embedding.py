@@ -13,8 +13,8 @@ class BackboneEmbedding(nn.Module):
         dtype: torch.dtype = torch.float64,
         device: str = "cpu",
         is_edge: bool = False,
-        num_embeddings: int = 1,
-        max_length: int = 514,
+        block_size: int = 514,
+        is_encoder = True,
     ):
         super(BackboneEmbedding, self).__init__()
 
@@ -25,8 +25,8 @@ class BackboneEmbedding(nn.Module):
                 mode=mode,
                 dtype=dtype,
                 device=device,
-                num_embeddings=num_embeddings,
-                max_length=max_length
+                block_size=block_size,
+                is_encoder = is_encoder,
             )
 
     def forward(self, batch: dict) -> torch.Tensor:

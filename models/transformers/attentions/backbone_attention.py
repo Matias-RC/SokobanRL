@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 
-
-from models.transformers.attentions.standard import StandardAttention
+#from models.transformers.attentions.standard import StandardAttention
 from models.transformers.attentions.multihead_standard import MultiHeadStandardAttention
+#from models.transformers.attentions.multihead_strassen import MultiHeadStrassenAttention
 #from models.transformers.attentions.strassen import StrassenAttention
 
 class BackboneAttention(nn.Module):
@@ -20,6 +20,7 @@ class BackboneAttention(nn.Module):
         device: str = "cpu",
         is_edge: bool = False,
         use_dropout: bool = False,
+        block_size: int = 128,
         masked_multihead_attention: bool = False,
         is_cross_attention: bool = False,
         # max_position_embedding: int = 512
@@ -37,13 +38,13 @@ class BackboneAttention(nn.Module):
         self.device = device
         self.is_edge = is_edge
         self.use_dropout = use_dropout
+        self.block_size = block_size
         self.masked_multihead_attention = masked_multihead_attention
-        # self.max_position_embedding = max_position_embedding
 
         # Dictionary of available attention classes
         attention_classes = {
-            #"standard": StandardAttention,
             "standard": MultiHeadStandardAttention,
+            #"strassen": MultiHeadStrassenAttention,
         }
 
         # Validate and instantiate the selected attention type
@@ -60,22 +61,23 @@ class BackboneAttention(nn.Module):
             mask_padding_value=mask_padding_value,
             device=device,
             use_dropout=use_dropout,
+            #block_size = block_size,
             masked_multihead_attention=masked_multihead_attention,
             is_cross_attention=is_cross_attention,
         )
 
         self.init_weight()
 
-    def forward(self, hidden_state, batch_mask=None):
+    def forward(self, query_hidden_states,cross_hidden_states, batch_mask=None,):
         # Compute attention output
-        if not self.is_edge:
-            attention_output = self.attention(
-                hidden_state=hidden_state, batch_mask=batch_mask
-            )
-        else:
-            attention_output = self.attention(
-                hidden_state=hidden_state, batch_mask=batch_mask
-            )
+        #if not self.is_edge:
+        attention_output = self.attention(
+            query_hidden_states,cross_hidden_states, batch_mask,
+        )
+        #else:
+        #    attention_output = self.attention(
+        #        hidden_state=hidden_state, batch_mask=batch_mask
+        #    )
 
         return attention_output
 

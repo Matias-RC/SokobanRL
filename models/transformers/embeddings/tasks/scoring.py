@@ -13,7 +13,7 @@ class ScoringEmbedding(nn.Module):
                 device: torch.device = None,
                 vocab_states_size: int = 6, # wall, box, goal, player, box_on_goal, player_on_goal
                 vocab_actions_size: int = 4,
-                position_size: int = 200): # max length of input (e.g., grid + CLS)
+                block_size: int = 200): # max length of input (e.g., grid + CLS)
         
         super(ScoringEmbedding, self).__init__()
 

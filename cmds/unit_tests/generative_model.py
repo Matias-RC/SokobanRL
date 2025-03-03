@@ -81,8 +81,12 @@ generative_model = GenerativeModelTransformer(hidden_dim = n_embd,
                                               embedding_type = "learnable",
                                               attention_type = "standard",
                                               library_dim = 4, # up, left, right, down
-                                              block_size=block_size
+                                              block_size=block_size,
+                                              
                                               )
+
+print(generative_model)
+
 
 #input-ouput pairs
 session_test = session_solved[0]

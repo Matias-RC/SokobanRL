@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.transformers.embeddings.tasks.scoring import ScoringEmbedding
+from models.transformers.embeddings.tasks.generative import GenerativeEmbedding
 
 class LearnableEmbedding(nn.Module):
     def __init__(
@@ -12,8 +13,8 @@ class LearnableEmbedding(nn.Module):
         mode: str = None,
         dtype: torch.dtype = torch.float64,
         device: str = "cpu",
-        num_embeddings: int = 10,
-        max_length: int = 514,
+        block_size: int = 514,
+        is_encoder:bool = True,
     ):
         super(LearnableEmbedding, self).__init__()
     
@@ -21,14 +22,21 @@ class LearnableEmbedding(nn.Module):
 
         if self.mode == "scoring":
                 self.embedding = ScoringEmbedding(
-                    hidden_dim=hidden_dim,
-                    embedding_norm_scalar=embedding_norm_scalar,
-                    dtype=dtype,
-                    device=device,
-                    #vocab_actions_size=num_embeddings, by default 4 and 6
-                    #vocab_states_size=num_embeddings, 
-                    position_size=max_length
+                                                  hidden_dim=hidden_dim,
+                                                  embedding_norm_scalar=embedding_norm_scalar,
+                                                  dtype=dtype,
+                                                  device=device,
+                                                  block_size=block_size,
                 )
-
+        elif self.mode == "generative":
+             self.embedding = GenerativeEmbedding(hidden_dim=hidden_dim,
+                                                  embedding_norm_scalar=embedding_norm_scalar,
+                                                  dtype=dtype,
+                                                  device=device,
+                                                  block_size=block_size,
+                                                  is_encoder=is_encoder,
+                                                 )
+    
     def forward(self, batch: dict) -> torch.Tensor:
         return self.embedding(batch)
+    

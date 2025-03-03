@@ -26,7 +26,7 @@ class BackboneTransformerEncoder(nn.Module):
         device: str = "cpu",
         attention_type: str = "standard",
         num_embeddings: int = 1,
-        max_length: int = 514
+        block_size: int = 514
     ):
 
         super(BackboneTransformerEncoder, self).__init__()
@@ -47,8 +47,8 @@ class BackboneTransformerEncoder(nn.Module):
             embedding_type=embedding_type,
             device=device,
             is_edge=(attention_type == "triangular"),
-            num_embeddings=num_embeddings,
-            max_length=max_length
+            block_size=block_size,
+            is_encoder = True,
         )
 
         # Initialize transformer layers
@@ -80,8 +80,9 @@ class BackboneTransformerEncoder(nn.Module):
                     dtype=dtype,
                     device=device,
                     attention_type=attention_type,
+                    block_size=block_size,
                     masked_multihead_attention=False,
-                    cross_attention=False,
+                    is_cross_attention=False,
                 )
                 for _ in range(num_layers)
             ])

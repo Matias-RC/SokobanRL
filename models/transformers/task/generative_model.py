@@ -5,6 +5,8 @@ from models.transformers.encoder.backbone_transformer_encoder import BackboneTra
 from models.transformers.feed_forward_networks.seqregressor import SequenceRegressor
 from models.transformers.feed_forward_networks.seqclassifier import SequenceClassifier
 from models.transformers.decoder.backbone_transformer_decoder import BackboneTransformerDecoder
+from models.transformers.embeddings.backbone_embedding import BackboneEmbedding
+
 
 class GenerativeModelTransformer(nn.Module):
     def __init__(
@@ -52,7 +54,7 @@ class GenerativeModelTransformer(nn.Module):
             eps=eps,
             share_layers=share_layers,
             device=device,
-            mode="scoring",
+            mode="generative",
             embedding_type=embedding_type,
             attention_type=attention_type,
         )
@@ -68,9 +70,11 @@ class GenerativeModelTransformer(nn.Module):
             eps=eps,
             share_layers=share_layers,
             device=device,
-            mode="scoring",
+            mode="generative",
             embedding_type=embedding_type,
             attention_type=attention_type,
+            masked_multihead_attention=True, #masked multi head attention
+            is_cross_attention=True  # cross attention between encoder and decoder
         )
 
         self.classifier = SequenceClassifier(hidden_dim=hidden_dim,
