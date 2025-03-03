@@ -13,7 +13,10 @@ class GenerativeDataset(Dataset):
         # grid (initial state) and the position of the sokoban player
         initial_states = [s.initial_state for s in session_batch]
         # actions that should generate the model
-        actions_to_solve = [s.solution.trajectory for s in session_batch]  
+        actions_to_solve = [sol.solution.trajectory() for sol in session_batch]  
+        print(actions_to_solve)
+        #print(initial_states)
+        print(actions_to_solve,len(actions_to_solve))
 
         self.dataset = {"initial_states": initial_states ,
                         "actions_to_solve":actions_to_solve, }
@@ -37,7 +40,8 @@ class GenerativeDataset(Dataset):
         y_actions = torch.tensor(self.dataset["actions_to_solve"][idx], dtype=torch.long)
         
         return {
-            "x_grid": x_grid,  
+            "encoder_x": x_grid,  
+            "decoder_x": x_grid,  
             "y_actions": y_actions,  
             "shape": x_grid.shape[0]
         }
