@@ -53,37 +53,6 @@ for key_sessions, session in curriculum.sessions.items():
     
 
 ''' Testing just one example on encoder-decoder transformer with standard attention '''
-
-
-#input-ouput pairs example
-from data.datasets.generative_model.dataset import GenerativeDataset
-from data.datasets.generative_model.collate import collate_fn
-from torch.utils.data import DataLoader
-
-session_test = session_solved[0]
-print("solution example:");print(f"class of solution {type(session_test.solution)}")
-print(f"dictionary of solution {session_test.solution.__dict__.keys()}")
-
-batch = [session_test]
-dataset = GenerativeDataset(session_batch=batch)
-dataloader = DataLoader(dataset,shuffle=False,collate_fn=collate_fn)
-
-print(next(iter(dataloader)))
-
-def get_batch(split):
-    # generate a small batch of data of inputs x and targets y
-    data = train_data if split == 'train' else val_data
-    ix = torch.randint(len(data) - block_size, (batch_size,))
-    x = torch.stack([data[i:i+block_size] for i in ix])
-    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
-    x, y = x.to(device), y.to(device)
-    return x, y
-
-
-
-
-
-
 from models.transformers.task.generative_model import GenerativeModelTransformer
 # hyperparameters
 batch_size = 16 # how many independent sequences will we process in parallel?
@@ -115,5 +84,33 @@ generative_model = GenerativeModelTransformer(hidden_dim = n_embd,
                                               block_size=block_size,
                                               
                                               )
+
+#input-ouput pairs example
+from data.datasets.generative_model.dataset import GenerativeDataset
+from data.datasets.generative_model.collate import collate_fn
+from torch.utils.data import DataLoader
+
+session_test = session_solved[0]
+print("solution example:");print(f"class of solution {type(session_test.solution)}")
+print(f"dictionary of solution {session_test.solution.__dict__.keys()}")
+
+batch = [session_test]
+dataset = GenerativeDataset(session_batch=batch)
+dataloader = DataLoader(dataset,shuffle=False,collate_fn=collate_fn)
+
+print(next(iter(dataloader)))
+
+print(0/0)
+
+def get_batch(split):
+    # generate a small batch of data of inputs x and targets y
+    data = train_data if split == 'train' else val_data
+    ix = torch.randint(len(data) - block_size, (batch_size,))
+    x = torch.stack([data[i:i+block_size] for i in ix])
+    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
+    x, y = x.to(device), y.to(device)
+    return x, y
+
+
 
 

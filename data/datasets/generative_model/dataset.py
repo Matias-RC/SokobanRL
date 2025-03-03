@@ -7,41 +7,44 @@ class GenerativeDataset(Dataset):
 
     '''GenerativeDataset recieves task and generate grid(x), actions(y) pairs'''
     
-    def __init__(self, session_batch):
+    def __init__(self, session_batch, dsl_map={(0,1):0,(1,0):1,(0,-1):2,(-1,0):3}, block_size=4 ):
         super().__init__()  # Ensures compatibility with torch Dataset
         
         # grid (initial state) and the position of the sokoban player
         initial_states = [s.initial_state for s in session_batch]
         # actions that should generate the model
-        actions_to_solve = [sol.solution.trajectory() for sol in session_batch]  
-        print(actions_to_solve)
-        #print(initial_states)
-        print(actions_to_solve,len(actions_to_solve))
 
-        self.dataset = {"initial_states": initial_states ,
-                        "actions_to_solve":actions_to_solve, }
+        self.states=[]
+        self.x=[]
+        self.y=[]
+        
+        actions_to_solve = [ sol.solution.trajectory() for sol in session_batch]
+         
+        actions_encode   = [ [dsl_map[a[0]] for a in k] for k in actions_to_solve ]  
+        
+        for i in range(len(actions_encode)):
+            actions_seq = actions_encode[i]
+            size_instance = len(actions_seq)
+            for k in range(size_instance):
+                if k+block_size+1 <= size_instance:
+                    input_dec, output_dec = actions_seq[k:(k+block_size)], actions_seq[(k+1):(k+block_size+1)]
+                    self.y.append(input_dec)
+                    self.x.append(output_dec)
+                    self.states.append(initial_states[i])
 
-    
-    def contruct_examples(self, batch):
-        n = len(batch)
-        indices = list(range(n))
-        random.shuffle(indices)   
-
-        examples = [batch[i] for i in indices]
-
-        return examples
-                
     def __len__(self):
-        return len(self.dataset)
+        return len(self.states)
 
     def __getitem__(self, idx):
         
-        x_grid = torch.tensor(self.dataset["initial_states"][idx] , dtype=torch.long)
-        y_actions = torch.tensor(self.dataset["actions_to_solve"][idx], dtype=torch.long)
+        encoder_x = torch.tensor(self.states[idx],dtype=torch.long)
+        decoder_x = torch.tensor(self.x[idx],dtype=torch.long)
+        decoder_y = torch.tensor(self.y[idx],dtype=torch.long)
         
         return {
-            "encoder_x": x_grid,  
-            "decoder_x": x_grid,  
-            "y_actions": y_actions,  
-            "shape": x_grid.shape[0]
+            "encoder_x": encoder_x,  
+            "decoder_x": decoder_x,  
+            "decoder_y": decoder_y,  
+            "shape_encoder": encoder_x.shape[0],
+            "shape_decoder": decoder_x.shape[0],
         }
