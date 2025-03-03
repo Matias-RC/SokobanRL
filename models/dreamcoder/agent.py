@@ -26,7 +26,6 @@ class Agent:
 
         self.dreamer = Dreamer(model)
         
-    
     def wake(self, wake_manager, session: list[Task]):
 
         self.current_session = session
