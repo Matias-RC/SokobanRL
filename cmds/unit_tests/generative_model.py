@@ -91,14 +91,28 @@ from data.datasets.generative_model.collate import collate_fn
 from torch.utils.data import DataLoader
 
 session_test = session_solved[0]
-print("solution example:");print(f"class of solution {type(session_test.solution)}")
-print(f"dictionary of solution {session_test.solution.__dict__.keys()}")
+#print("solution example:");print(f"class of solution {type(session_test.solution)}")
+#print(f"dictionary of solution {session_test.solution.__dict__.keys()}")
 
 batch = [session_test]
 dataset = GenerativeDataset(session_batch=batch)
-dataloader = DataLoader(dataset,shuffle=False,collate_fn=collate_fn)
+dataloader = DataLoader(dataset,shuffle=False,collate_fn=collate_fn,batch_size=1)
 
-print(next(iter(dataloader)))
+for k, example in enumerate(dataloader):
+    print("example in dataset: ")
+    for d, data in enumerate(dataset):
+        if d == k:
+            print(data)
+    print("-----------------/////////////")
+    print("example in dataloader")
+    print(example.keys())
+    
+    for k,v in example.items():
+        print("-----------------")
+        print(k, v)
+        print("-----------------")
+    print(k)
+    break
 
 print(0/0)
 
