@@ -9,6 +9,7 @@ class GenerativeDataset(Dataset):
     
     def __init__(self,
                  session_batch,
+                 samples_per_session=5,
                  dsl={(0,1):0,
                           (1,0):1,
                           (0,-1):2,
@@ -34,17 +35,13 @@ class GenerativeDataset(Dataset):
             actions_seq = actions_encoded[i]
             size_instance = len(actions_seq)
             
-            for k in range(size_instance):
-                if k+block_size+1 <= size_instance:
-                    print(actions_seq)
-                    input_dec, output_dec = actions_seq[k:(k+block_size)], actions_seq[(k+1):(k+block_size+1)]
-                    print(input_dec)
-                    print(output_dec)
-                    print("##################")
-                    self.all_actions.append(actions_seq)
-                    self.y.append(input_dec)
-                    self.x.append(output_dec)
-                    self.states.append(initial_states[i])
+            for k in range(samples_per_session):
+
+                input_dec, output_dec = actions_seq[k:(k+block_size)], actions_seq[(k+1):(k+block_size+1)]
+                self.all_actions.append(actions_seq)
+                self.y.append(input_dec)
+                self.x.append(output_dec)
+                self.states.append(initial_states[i])
         print(0/0) ##
     
     def __len__(self):
