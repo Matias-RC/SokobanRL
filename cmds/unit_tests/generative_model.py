@@ -99,32 +99,40 @@ dataset = GenerativeDataset(session_batch=batch)
 dataloader = DataLoader(dataset,shuffle=False,collate_fn=collate_fn,batch_size=1)
 
 for k, example in enumerate(dataloader):
-    print("example in dataset: ")
-    for d, data in enumerate(dataset):
-        if d == k:
-            print(data)
-    print("-----------------/////////////")
+    #print("example in dataset: ")
+    #for d, data in enumerate(dataset):
+    #    if d == k:
+    #        print(data)
+    #print("-----------------/////////////")
     print("example in dataloader")
     print(example.keys())
     
     for k,v in example.items():
         print("-----------------")
+        print(v.shape)
         print(k, v)
         print("-----------------")
-    print(k)
     break
 
-print(0/0)
 
-def get_batch(split):
-    # generate a small batch of data of inputs x and targets y
-    data = train_data if split == 'train' else val_data
-    ix = torch.randint(len(data) - block_size, (batch_size,))
-    x = torch.stack([data[i:i+block_size] for i in ix])
-    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
-    x, y = x.to(device), y.to(device)
-    return x, y
 
+
+#training example
+import torch
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+max_iters=10
+criterion = torch.nn.CrossEntropyLoss()
+
+for iter in range(max_iters):
+
+    for batch in dataloader:
+
+        logits = model(batch)
+        loss = criterion(logits,batch["decoder_target_ids"])
+
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
 
 
 

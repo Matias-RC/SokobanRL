@@ -9,7 +9,7 @@ class GenerativeDataset(Dataset):
     
     def __init__(self,
                  session_batch,
-                 samples_per_session=5,
+                 samples_per_session=1,
                  dsl={(0,1):0,
                           (1,0):1,
                           (0,-1):2,
@@ -33,17 +33,18 @@ class GenerativeDataset(Dataset):
         for i in range(len(actions_encoded)):
 
             actions_seq = actions_encoded[i]
-            size_instance = len(actions_seq)
+            num_actions = len(actions_seq)
             
-            for k in range(samples_per_session):
+            idx = np.random.choice(a=(num_actions-block_size),size=samples_per_session) 
 
-                input_dec, output_dec = actions_seq[k:(k+block_size)], actions_seq[(k+1):(k+block_size+1)]
-                self.all_actions.append(actions_seq)
-                self.y.append(input_dec)
-                self.x.append(output_dec)
-                self.states.append(initial_states[i])
-        print(0/0) ##
-    
+            input_dec = [actions_seq[ k : (k+block_size)] for k in idx] 
+            output_dec = [actions_seq[ (k+1):(k+block_size+1)] for k in idx]
+
+            self.all_actions.append(actions_seq)
+            self.x.extend(input_dec)
+            self.y.extend(output_dec)
+            self.states.extend([initial_states[i]]*num_actions)
+
     def __len__(self):
         return len(self.states)
 
