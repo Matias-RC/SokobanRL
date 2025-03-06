@@ -87,15 +87,14 @@ class GenerativeModelTransformer(nn.Module):
         self.is_training = False
 
     def forward(self, batch):
-        #encoder
-        activations, attn_weights = self.encoder(batch)
-        #save attention activations from encoder in batch
+        activations, attn_weights = self.encoder(batch) #encoder
+        
         batch["cross_hidden_states"] = activations
-        #decoder        
-        decoder_activations, = self.decoder(batch)
-        #classify all outputs
+        
+        decoder_activations, = self.decoder(batch) #decoder        
+        
         y_hat = self.classifier(decoder_activations) # regressor is a feed forward network
-        return y_hat, activations
+        return y_hat, None
 
     def unstructured_forward(self, instance) -> torch.Tensor:
 

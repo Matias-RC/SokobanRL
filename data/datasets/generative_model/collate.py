@@ -73,8 +73,9 @@ def collate_fn(batch):
             "mask": None,
         },
         "shape": shapes_squared,
-        "pos_i": pos_i.reshape(B, N, N, 1),
-        "pos_j": pos_j.reshape(B, N, N, 1),
+        "encoder_pos_i": pos_i.reshape(B, N, N, 1),
+        "encoder_pos_j": pos_j.reshape(B, N, N, 1),
+        "decoder_positions": position,
     }
 
     return batch

@@ -36,13 +36,13 @@ curriculum = Curriculum(
     strategy = "sorted"
 )
 
-model = DeltaScorer(actions_for_sokoban)
+#model = DeltaScorer(actions_for_sokoban)
 m = SokobanManager()
 a = Agent(
     actions=actions_for_sokoban,
     manager=m,
-    model=model,
-    recognition_model=model,
+    model=None,
+    recognition_model=None,
     batchSize=10,
     drawSize=1
 )
@@ -106,29 +106,28 @@ for k, example in enumerate(dataloader):
     #print("-----------------/////////////")
     print("example in dataloader")
     print(example.keys())
-    
-    for k,v in example.items():
-        print("-----------------")
-        print(v.shape)
-        print(k, v)
-        print("-----------------")
     break
-
-
+    
+#    for k,v in example.items():
+#        print("-----------------")
+        
+        #print(v.shape)
+        #print(k, v)
+        #print("-----------------")
+#    break
 
 
 #training example
+print("training the model")
 import torch
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+optimizer=torch.optim.AdamW(generative_model.parameters(), lr=learning_rate)
 max_iters=10
-criterion = torch.nn.CrossEntropyLoss()
+criterion=torch.nn.CrossEntropyLoss()
 
 for iter in range(max_iters):
-
     for batch in dataloader:
-
-        logits = model(batch)
-        loss = criterion(logits,batch["decoder_target_ids"])
+        logits=generative_model(batch)
+        loss=criterion(logits,batch["decoder_target_ids"])
 
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
