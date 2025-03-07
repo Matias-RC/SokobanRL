@@ -94,6 +94,7 @@ class GenerativeModelTransformer(nn.Module):
         decoder_activations, = self.decoder(batch) #decoder        
         
         y_hat = self.classifier(decoder_activations) # regressor is a feed forward network
+        
         return y_hat, None
 
     def unstructured_forward(self, instance) -> torch.Tensor:
