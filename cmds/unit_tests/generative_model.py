@@ -60,7 +60,7 @@ block_size = 64 # what is the maximum context length for predictions?
 max_iters = 10
 eval_interval = 2
 learning_rate = 3e-4
-device ="cuda:0" #'cuda' if torch.cuda.is_available() else 'cpu'
+device ="cpu" #'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
 n_embd = 384
 n_head = 6
@@ -105,8 +105,10 @@ for k, example in enumerate(dataloader):
     #print("-----------------/////////////")
     print("example in dataloader")
     print(example.keys())
+    print(example)
     break
-    
+
+print(0/0)
 #    for k,v in example.items():
 #        print("-----------------")
         

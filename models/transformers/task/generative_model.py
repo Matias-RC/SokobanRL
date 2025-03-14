@@ -97,23 +97,23 @@ class GenerativeModelTransformer(nn.Module):
         
         return y_hat, None
 
-    def unstructured_forward(self, instance) -> torch.Tensor:
+    #def unstructured_forward(self, instance) -> torch.Tensor:
+    #
+    #    x = self.to_tensor(instance) # similar to the collate function in the dataloader
+    #
+    #    return self.forward(x)
 
-        x = self.to_tensor(instance) # similar to the collate function in the dataloader
-
-        return self.forward(x)
-
-    def structured_forward(self, batch):
-
-        activations, attn_weights = self.encoder(x)
-
-        x["cross_hidden_states"] = activations
-        
-        activations, = self.decoder(y)
-
-        y_hat = self.classifier(activations) # regressor is a feed forward network
-
-        return y_hat, activations
+    #def structured_forward(self, batch):
+    #
+    #    activations, attn_weights = self.encoder(x)
+    #
+    #    x["cross_hidden_states"] = activations
+    #
+    #    activations, = self.decoder(y)
+    #
+    #    y_hat = self.classifier(activations) # regressor is a feed forward network
+    #
+    #    return y_hat, activations
     
     def to_tensor(self, instance) -> torch.Tensor:
         # Convert instance to tensor similar to the collate function in the dataloader
