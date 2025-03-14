@@ -60,7 +60,7 @@ block_size = 64 # what is the maximum context length for predictions?
 max_iters = 10
 eval_interval = 2
 learning_rate = 3e-4
-device ="cuda:0" #'cuda' if torch.cuda.is_available() else 'cpu'
+device ="cpu" #'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
 n_embd = 384
 n_head = 6
@@ -68,22 +68,21 @@ n_layer = 2
 dropout = 0.1
 
 #model with fix hyperparams
-generative_model = GenerativeModelTransformer(hidden_dim = n_embd,
-                                              num_layers = n_layer,
-                                              num_heads = n_head,
-                                              dropout_rate= dropout,
-                                              embedding_norm_scalar= 1.0,
-                                              use_norm = True,
-                                              use_attention_dropout = False,
-                                              eps = 1e-6,
-                                              share_layers = False,
-                                              device = "cpu",
-                                              embedding_type = "learnable",
-                                              attention_type = "standard",
-                                              library_dim = 4, # up, left, right, down
-                                              block_size=block_size,
-                                              
-                                              )
+#generative_model = GenerativeModelTransformer(hidden_dim = n_embd,
+#                                              num_layers = n_layer,
+#                                              num_heads = n_head,
+#                                              dropout_rate= dropout,
+#                                              embedding_norm_scalar= 1.0,
+#                                              use_norm = True,
+#                                              use_attention_dropout = False,
+#                                              eps = 1e-6,
+#                                              share_layers = False,
+#                                              device = "cpu",
+#                                              embedding_type = "learnable",
+#                                              attention_type = "standard",
+#                                              library_dim = 4, # up, left, right, down
+#                                              block_size=block_size,                                 
+#                                              )
 
 #input-ouput pairs example
 from data.datasets.generative_model.dataset import GenerativeDataset
@@ -106,8 +105,10 @@ for k, example in enumerate(dataloader):
     #print("-----------------/////////////")
     print("example in dataloader")
     print(example.keys())
+    print(example)
     break
-    
+
+print(0/0)
 #    for k,v in example.items():
 #        print("-----------------")
         
