@@ -66,18 +66,17 @@ class BackboneTransformerLayer(nn.Module):
 
         if self.is_cross_attention:
             # Attention mechanism for cross multi-head attention
-            self.cross_attention = BackboneAttention(
-                attention_type=attention_type,
-                hidden_dim=hidden_dim,
-                num_heads=num_heads,
-                use_dropout=use_attention_dropout,
-                dropout_rate=dropout_rate,
-                dtype=dtype,
-                device=device,
-                block_size=block_size,
-                masked_multihead_attention=False,
-                is_cross_attention=is_cross_attention,
-            )
+            self.cross_attention = BackboneAttention(attention_type=attention_type,
+                                                     hidden_dim=hidden_dim,
+                                                     num_heads=num_heads,
+                                                     use_dropout=use_attention_dropout,
+                                                     dropout_rate=dropout_rate,
+                                                     dtype=dtype,
+                                                     device=device,
+                                                     block_size=block_size,
+                                                     masked_multihead_attention=False,
+                                                     is_cross_attention=is_cross_attention,)
+            
             # Feed-forward network for cross multi-head attention
             self.ffn_cmha = FFN(
                 hidden_dim=hidden_dim,
@@ -94,15 +93,26 @@ class BackboneTransformerLayer(nn.Module):
             self.dropout4 = nn.Dropout(dropout_rate)
 
     def forward(
-        self, query_hidden_states: torch.Tensor, cross_hidden_states: torch.Tensor=None, batch_mask: torch.Tensor=None, #self, hidden_state: torch.Tensor, batch_mask: torch.Tensor = None,
+        self, query_hidden_states: torch.Tensor,
+        cross_hidden_states: torch.Tensor=None,
+        batch_mask: torch.Tensor=None, #self, hidden_state: torch.Tensor, batch_mask: torch.Tensor = None,
     ) -> torch.Tensor:
 
+        print(self.masked_multihead_attention)
+        print(self.is_cross_attention)
+        print(query_hidden_states.shape)
+        print(self.hidden_dim)
         # Step 1: Multihead Attention 
         hidden_state = self.norm1(query_hidden_states) if self.use_norm else hidden_state
+        print("hidden state")
+        
         attention_output, attention_weights = self.self_attention(
             query_hidden_states, cross_hidden_states=cross_hidden_states, batch_mask=batch_mask
         )
+        print("attention")
+        
         attention_output = self.dropout1(attention_output)
+        print("concat")
         if self.concat:
             # Concatenate attention output with the hidden state: x <- x + f(x, dt*theta)
             if self.use_norm:

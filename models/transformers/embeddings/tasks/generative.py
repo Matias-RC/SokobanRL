@@ -75,9 +75,9 @@ class GenerativeEmbedding(nn.Module):
             token_embeddings = token_embeddings + self.position_embedding(positions)
             embeddings = torch.concat([token_embeddings,], dim=-1)
 
-        print(embeddings)
-        print(embeddings.shape)
-        print(0/0)
+        #print(embeddings)
+        #print(embeddings.shape)
+        #print(0/0)
        
         #out_embedding = self.projection(embeddings)
 

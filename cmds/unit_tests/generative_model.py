@@ -64,7 +64,7 @@ device ="cuda:0" #'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
 n_embd = 384
 n_head = 6
-n_layer = 2
+n_layer = 1
 dropout = 0.1
 
 #model with fix hyperparams
@@ -82,7 +82,6 @@ generative_model = GenerativeModelTransformer(hidden_dim = n_embd,
                                               attention_type = "standard",
                                               library_dim = 4, # up, left, right, down
                                               block_size=block_size,
-                                              
                                               )
 
 #input-ouput pairs example

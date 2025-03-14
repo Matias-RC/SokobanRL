@@ -42,8 +42,7 @@ class MultiHeadStandardAttention(nn.Module):
             ),
             persistent=False,
         )
-
-
+        
         assert hidden_dim % num_heads == 0, "hidden_dim must be divisible by num_heads"
 
         #self.q_attn = nn.Linear(self.hidden_dim, self.hidden_dim * 1, bias=bias, dtype=dtype, device=device)
