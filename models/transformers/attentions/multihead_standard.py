@@ -45,9 +45,6 @@ class MultiHeadStandardAttention(nn.Module):
         
         assert hidden_dim % num_heads == 0, "hidden_dim must be divisible by num_heads"
 
-        #self.q_attn = nn.Linear(self.hidden_dim, self.hidden_dim * 1, bias=bias, dtype=dtype, device=device)
-        #self.k_attn = nn.Linear(self.hidden_dim, self.hidden_dim * 1, bias=bias, dtype=dtype, device=device)
-        #self.v_attn = nn.Linear(self.hidden_dim, self.hidden_dim * 1, bias=bias, dtype=dtype, device=device)
         if self.is_cross_attention:
             self.q_attn = nn.Linear(self.hidden_dim, self.hidden_dim * 1, bias=bias, dtype=dtype, device=device)
             self.k_attn = nn.Linear(self.hidden_dim, self.hidden_dim * 1, bias=bias, dtype=dtype, device=device)
@@ -100,11 +97,7 @@ class MultiHeadStandardAttention(nn.Module):
             v = self.v_attn(key_value_hidden_states).reshape(B, N_key_values, 1, H, D).permute(2, 0, 3, 1, 4).squeeze(0) #key_states, value_states
         else:
             q, k, v = self.qkv_attn(query_hidden_states).reshape(B, N_query, 3, H, D).permute(2, 0, 3, 1, 4)
-
-        print(q.shape)
-        print(k.shape)
-        print(v.shape)
-        
+      
         scores = contract("bhid,bhjd->bhij", q, k) * self.scaler
         
         #if query_padding_mask is not None: #key attention mask

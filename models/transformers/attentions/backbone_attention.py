@@ -69,15 +69,10 @@ class BackboneAttention(nn.Module):
         self.init_weight()
 
     def forward(self, query_hidden_states,cross_hidden_states, batch_mask=None,):
-        # Compute attention output
-        #if not self.is_edge:
+
         attention_output = self.attention(
             query_hidden_states,cross_hidden_states, batch_mask,
         )
-        #else:
-        #    attention_output = self.attention(
-        #        hidden_state=hidden_state, batch_mask=batch_mask
-        #    )
 
         return attention_output
 

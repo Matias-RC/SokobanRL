@@ -31,14 +31,12 @@ class SequenceClassifier(nn.Module):
         self.init_weights()
 
     def forward(self, features):
-        print(torch.mean(features))
-        print(features.shape)
         x = self.dropout(features)
         x = self.dense(x)
         x = self.activation(x)
         x = self.dropout(x)
         x = self.out_proj(x)
-        return x[:,0,:]
+        return x #token classifier
 
     def init_weights(self):
         for name, param in self.named_parameters():

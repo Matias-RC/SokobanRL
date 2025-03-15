@@ -88,11 +88,8 @@ class GenerativeModelTransformer(nn.Module):
 
     def forward(self, batch):
         activations, attn_weights = self.encoder(batch) #encoder
-        print("Encoder done!")
         batch["cross_hidden_states"] = activations
-        print("Entering decoder!")
         decoder_activations, _ = self.decoder(batch) #decoder        
-        print("Decoder done!")
         y_hat = self.classifier(decoder_activations) # regressor is a feed forward network
         
         return y_hat, None

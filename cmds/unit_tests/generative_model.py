@@ -125,17 +125,17 @@ optimizer=torch.optim.AdamW(generative_model.parameters(), lr=learning_rate)
 max_iters=10
 criterion=torch.nn.CrossEntropyLoss()
 
+
 for iter in range(max_iters):
     for batch in dataloader:
-
         logits,_ =generative_model(batch)
-        print(logits.shape)
-        print(batch["decoder_target_ids"].shape)
-        loss=criterion(logits,batch["decoder_target_ids"])
-
+        loss=criterion(logits,batch["decoder_target_ids"].squeeze(-1))
+        print("one batch done! loss: ", loss)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
+        
+        break
 
 
 
