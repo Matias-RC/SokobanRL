@@ -93,7 +93,7 @@ class BackboneTransformerDecoder(nn.Module):
             layer.gradient_checkpointing = True
     
     def forward(self, batch: dict = None) -> torch.Tensor:
-        input_embd = self.embedding(batch=batch)
+        input_embd = self.embedding(batch=batch) #decoder inputs that pass throug embedding
         hidden_state = input_embd
         cross_hidden_states = batch["cross_hidden_states"]
         
@@ -107,11 +107,11 @@ class BackboneTransformerDecoder(nn.Module):
                 
                 hidden_state, attention_weights = torch.utils.checkpoint.checkpoint(
                     create_custom_forward(layer),
-                    hidden_state, batch["batch_mask"]
+                    hidden_state, batch["batch_mask_decoder"]
                 )
             else:
                 hidden_state, attention_weights = layer(
-                    query_hidden_states=hidden_state, cross_hidden_states=cross_hidden_states, batch_mask=batch["batch_mask"]
+                    query_hidden_states=hidden_state, cross_hidden_states=cross_hidden_states, batch_mask=batch["batch_mask_decoder"]
                 )
             all_attention_weights.append(attention_weights)
 

@@ -22,11 +22,24 @@ class GenerativeEmbedding(nn.Module):
         self.dtype = dtype
         self.device = device
         self.is_encoder = is_encoder
+        self.max_size = 100
 
         if is_encoder:
             #self.in_proj = 3
             self.embedding = nn.Embedding( #states and actions
                 num_embeddings=vocab_states_size + vocab_actions_size + 2, # +2 for CLS and padding
+                embedding_dim=hidden_dim,
+                dtype=dtype,
+                device=device
+            )
+            self.pos_i_embd = nn.Embedding( #states and actions
+                num_embeddings=self.max_size, # +2 for CLS and padding
+                embedding_dim=hidden_dim,
+                dtype=dtype,
+                device=device
+            )
+            self.pos_j_embd = nn.Embedding( #states and actions
+                num_embeddings=self.max_size, # +2 for CLS and padding
                 embedding_dim=hidden_dim,
                 dtype=dtype,
                 device=device
@@ -39,13 +52,13 @@ class GenerativeEmbedding(nn.Module):
                 dtype=dtype,
                 device=device
             )
-        
-        self.position_embedding = nn.Embedding( #states and actions
-            num_embeddings=block_size, # +2 for CLS and padding
-            embedding_dim=hidden_dim,
-            dtype=dtype,
-            device=device
-        )
+            
+            self.position_embedding = nn.Embedding( #states and actions
+                                                    num_embeddings=block_size, # +2 for CLS and padding
+                                                    embedding_dim=hidden_dim,
+                                                    dtype=dtype,
+                                                    device=device
+                                                )
         
         #self.projection = nn.Linear(in_features=self.in_proj,
         #                            out_features=hidden_dim,
@@ -54,31 +67,28 @@ class GenerativeEmbedding(nn.Module):
         
 
     def forward(self, batch: Dict[str, Tensor]) -> Tensor:
-        
+
         if self.is_encoder:
             input_ids = batch["encoder_input_ids"].to(self.device).flatten(1)
         else:
             input_ids = batch["decoder_input_ids"].to(self.device).flatten(1)
-            
+        
         token_embeddings = self.embedding(input_ids)
         
         if self.is_encoder:
-            pos_i = batch["encoder_pos_i"].to(self.device).flatten(1)
-            pos_j = batch["encoder_pos_j"].to(self.device).flatten(1)
-        
-            embeddings = torch.concat([token_embeddings,
-                                       pos_i.unsqueeze(-1),
-                                       pos_j.unsqueeze(-1)
-                                    ], dim=-1)
+            pos_i = batch["encoder_pos_i"].to(self.device).flatten(1).to(torch.long)
+            pos_j = batch["encoder_pos_j"].to(self.device).flatten(1).to(torch.long)
+            
+            pos_i_embd = self.pos_i_embd(pos_i)
+            pos_j_embd = self.pos_j_embd(pos_j)
+
+            embeddings = token_embeddings + pos_i_embd + pos_j_embd
+            #embeddings = torch.concat([token_embeddings, pos_i.unsqueeze(-1), pos_j.unsqueeze(-1)          ], dim=-1)
         else:
             positions = batch["decoder_positions"].to(self.device).flatten(1)
             token_embeddings = token_embeddings + self.position_embedding(positions)
             embeddings = torch.concat([token_embeddings,], dim=-1)
 
-        #print(embeddings)
-        #print(embeddings.shape)
-        #print(0/0)
-       
         #out_embedding = self.projection(embeddings)
 
         return embeddings

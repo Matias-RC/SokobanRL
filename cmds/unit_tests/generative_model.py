@@ -14,6 +14,8 @@ import numpy as np
 NUM_TASKS = 2
 GRID_SIZE = 6
 
+np.random.seed(54)
+
 actions_for_sokoban = [
     [(-1, 0)],  # 'w' (UP)
     [(1, 0)],   # 's' (DOWN)
@@ -105,10 +107,8 @@ for k, example in enumerate(dataloader):
     #print("-----------------/////////////")
     print("example in dataloader")
     print(example.keys())
-    print(example)
     break
 
-print(0/0)
 #    for k,v in example.items():
 #        print("-----------------")
         
@@ -127,7 +127,10 @@ criterion=torch.nn.CrossEntropyLoss()
 
 for iter in range(max_iters):
     for batch in dataloader:
-        logits=generative_model(batch)
+
+        logits,_ =generative_model(batch)
+        print(logits.shape)
+        print(batch["decoder_target_ids"].shape)
         loss=criterion(logits,batch["decoder_target_ids"])
 
         optimizer.zero_grad(set_to_none=True)

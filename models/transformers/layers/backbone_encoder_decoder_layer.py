@@ -98,21 +98,16 @@ class BackboneTransformerLayer(nn.Module):
         batch_mask: torch.Tensor=None, #self, hidden_state: torch.Tensor, batch_mask: torch.Tensor = None,
     ) -> torch.Tensor:
 
-        print(self.masked_multihead_attention)
-        print(self.is_cross_attention)
-        print(query_hidden_states.shape)
-        print(self.hidden_dim)
         # Step 1: Multihead Attention 
+        print("self attention")
         hidden_state = self.norm1(query_hidden_states) if self.use_norm else hidden_state
-        print("hidden state")
         
         attention_output, attention_weights = self.self_attention(
             query_hidden_states, cross_hidden_states=cross_hidden_states, batch_mask=batch_mask
         )
-        print("attention")
-        
+       
         attention_output = self.dropout1(attention_output)
-        print("concat")
+
         if self.concat:
             # Concatenate attention output with the hidden state: x <- x + f(x, dt*theta)
             if self.use_norm:
@@ -129,6 +124,7 @@ class BackboneTransformerLayer(nn.Module):
 
         # Step 2: Cross Multihead Attention
         if self.is_cross_attention:
+            print("cross attention")
             attention_output, attention_weights = self.cross_attention(
                 query_hidden_states, cross_hidden_states=cross_hidden_states, batch_mask=batch_mask
             )

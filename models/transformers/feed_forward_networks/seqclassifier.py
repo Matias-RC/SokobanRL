@@ -31,6 +31,8 @@ class SequenceClassifier(nn.Module):
         self.init_weights()
 
     def forward(self, features):
+        print(torch.mean(features))
+        print(features.shape)
         x = self.dropout(features)
         x = self.dense(x)
         x = self.activation(x)

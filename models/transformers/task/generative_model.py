@@ -23,7 +23,7 @@ class GenerativeModelTransformer(nn.Module):
         device: str = "cpu",
         embedding_type: str = "theoretical",
         attention_type: str = "standard",
-        library_dim: int = 1,
+        library_dim: int = 4,
         block_size: int = 100,
     ) -> None:
 
@@ -88,11 +88,11 @@ class GenerativeModelTransformer(nn.Module):
 
     def forward(self, batch):
         activations, attn_weights = self.encoder(batch) #encoder
-        
+        print("Encoder done!")
         batch["cross_hidden_states"] = activations
-        
-        decoder_activations, = self.decoder(batch) #decoder        
-        
+        print("Entering decoder!")
+        decoder_activations, _ = self.decoder(batch) #decoder        
+        print("Decoder done!")
         y_hat = self.classifier(decoder_activations) # regressor is a feed forward network
         
         return y_hat, None
